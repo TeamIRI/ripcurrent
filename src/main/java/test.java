@@ -46,7 +46,7 @@ public class test {
         return sb.toString();
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
         Gson g = new Gson();
         ArrayList<String> columns = new ArrayList<>();
         Logger LOG = LoggerFactory.getLogger(test.class);
@@ -62,6 +62,9 @@ public class test {
         props.setProperty("database.hostname", "localhost");
         props.setProperty("database.port", "3306");
         props.setProperty("database.user", "devonk");
+        if (System.getenv("DBPASS") == null) {
+            throw new Exception("Set environment variable for DBPASS with the password to the database.");
+        }
         props.setProperty("database.password", System.getenv("DBPASS"));
         props.setProperty("database.server.id", "85744");
         props.setProperty("database.server.name", "test");
@@ -72,6 +75,7 @@ public class test {
         AtomicReference<Integer> i = new AtomicReference<>();
         i.set(0);
         AtomicReference<HashMap<String, SclScript>> scripts = new AtomicReference<>();
+        scripts.set(new HashMap<String, SclScript>());
         try (DebeziumEngine<ChangeEvent<String, String>> engine = DebeziumEngine.create(Json.class)
                 .using(props)
                 .notifying(record -> {
@@ -84,16 +88,20 @@ public class test {
                                 columns.addAll(Jobject_.keySet());
                                 Integer count = new Integer(0);
                                 Boolean makeNewScript = new Boolean(false);
-                                for (SclScript script : scripts.get().values()) {
+                                if (scripts.get() != null && scripts.get().values() != null && scripts.get().values().size() > 0) {
+                                    for (SclScript script : scripts.get().values()) {
 
-                                    if (!script.getTable().equals(jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString()) || !script.getFields().equals(columns)) {
-                                        count++;
-                                        if (count == scripts.get().size()) {
-                                            makeNewScript = true;
+                                        if (!script.getTable().equals(jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString()) || !script.getFields().equals(columns)) {
+                                            count++;
+                                            if (count == scripts.get().size()) {
+                                                makeNewScript = true;
+                                            }
+                                        } else {
+                                            break;
                                         }
-                                    } else {
-                                        break;
                                     }
+                                } else {
+                                    makeNewScript = true;
                                 }
                                 if (makeNewScript) {
                                     Process process = null;
