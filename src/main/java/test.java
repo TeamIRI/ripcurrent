@@ -1,4 +1,3 @@
-import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -47,7 +46,6 @@ public class test {
     }
 
     public static void main(String[] args) throws Exception {
-        Gson g = new Gson();
         ArrayList<String> columns = new ArrayList<>();
         Logger LOG = LoggerFactory.getLogger(test.class);
         LOG.info("Launching Debezium embedded engine");
@@ -75,20 +73,23 @@ public class test {
         AtomicReference<Integer> i = new AtomicReference<>();
         i.set(0);
         AtomicReference<HashMap<String, SclScript>> scripts = new AtomicReference<>();
-        scripts.set(new HashMap<String, SclScript>());
+        scripts.set(new HashMap<>());
         try (DebeziumEngine<ChangeEvent<String, String>> engine = DebeziumEngine.create(Json.class)
                 .using(props)
                 .notifying(record -> {
                     if (record.value() != null) {
                         try {
-                            JsonObject jsonObject = new JsonParser().parse(record.value()).getAsJsonObject();
-                            String operation = jsonObject.get("payload").getAsJsonObject().get("op").getAsString();
+                            JsonObject jsonObject = JsonParser.parseString(record.value()).getAsJsonObject();
+                            String operation = "";
+                            if (jsonObject != null && jsonObject.get("payload") != null && jsonObject.get("payload").getAsJsonObject() != null && jsonObject.get("payload").getAsJsonObject().get("op") != null) {
+                                operation = jsonObject.get("payload").getAsJsonObject().get("op").getAsString();
+                            }
                             if (operation.equals("c")) {
                                 JsonObject Jobject_ = jsonObject.get("payload").getAsJsonObject().get("after").getAsJsonObject();
                                 columns.addAll(Jobject_.keySet());
-                                Integer count = new Integer(0);
-                                Boolean makeNewScript = new Boolean(false);
-                                if (scripts.get() != null && scripts.get().values() != null && scripts.get().values().size() > 0) {
+                                int count = 0;
+                                boolean makeNewScript = Boolean.FALSE;
+                                if (scripts.get() != null && scripts.get().values().size() > 0) {
                                     for (SclScript script : scripts.get().values()) {
 
                                         if (!script.getTable().equals(jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString()) || !script.getFields().equals(columns)) {
@@ -104,7 +105,6 @@ public class test {
                                     makeNewScript = true;
                                 }
                                 if (makeNewScript) {
-                                    Process process = null;
                                     File tempFile = null;
                                     try {
                                         tempFile = File.createTempFile("sortcl", ".tmp");
@@ -112,6 +112,7 @@ public class test {
                                         e.printStackTrace();
                                     }
 //File tempFile = File.createTempFile("MyAppName-", ".tmp");
+                                    assert tempFile != null;
                                     tempFile.deleteOnExit();
                                     try {
                                         FileWriter myWriter = new FileWriter(tempFile);
@@ -137,24 +138,20 @@ public class test {
                                     ct++;
                                     System.out.println(jj.getValue());
                                     try {
-                                        scripts.get().get(count.toString())
+                                        scripts.get().get(Integer.toString(count))
                                                 .getStdin().write(jj.getValue().getAsString());
                                         if (ct < Jobject_.entrySet().size()) {
-                                            scripts.get().get(count.toString()).getStdin().write("\t");
+                                            scripts.get().get(Integer.toString(count)).getStdin().write("\t");
                                         }
                                     } catch (IOException e) {
-                                        e.printStackTrace();
-                                    } catch (NullPointerException e) {
-                                        e.printStackTrace();
-                                    } catch (UnsupportedOperationException e) {
                                         e.printStackTrace();
                                     }
 
                                 }
 
                                 try {
-                                    scripts.get().get(count.toString()).getStdin().newLine();
-                                    scripts.get().get(count.toString()).getStdin().flush();
+                                    scripts.get().get(Integer.toString(count)).getStdin().newLine();
+                                    scripts.get().get(Integer.toString(count)).getStdin().flush();
                                     //script.get().getStdin().close();
                                 } catch (IOException e) {
                                     e.printStackTrace();
