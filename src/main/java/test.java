@@ -8,9 +8,7 @@ import io.debezium.engine.format.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -60,28 +58,42 @@ public class test {
         ArrayList<String> columns = new ArrayList<>();
         Logger LOG = LoggerFactory.getLogger(test.class);
         LOG.info("Launching Debezium embedded engine");
-        Configuration config = Configuration.empty();
-        final Properties props = config.asProperties();
-        props.setProperty("name", "engine");
-        props.setProperty("connector.class", "io.debezium.connector.mysql.MySqlConnector");
-        props.setProperty("offset.storage", "org.apache.kafka.connect.storage.FileOffsetBackingStore");
-        props.setProperty("offset.storage.file.filename", "offsets.dat");
-        props.setProperty("offset.flush.interval.ms", "1000");
-        /* begin connector properties */
-        props.setProperty("database.hostname", "localhost");
-        props.setProperty("database.port", "3306");
-        props.setProperty("database.user", "devonk");
-        if (System.getenv("DBPASS") == null) {
-            throw new Exception("Set environment variable for DBPASS with the password to the database.");
+        Properties props;
+        try (InputStream input = new FileInputStream("config.properties")) {
+
+            props = new Properties();
+
+            // load a properties file
+            props.load(input);
+
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            Configuration config = Configuration.empty();
+            props = config.asProperties();
+            props.setProperty("name", "engine");
+            props.setProperty("connector.class", "io.debezium.connector.mysql.MySqlConnector");
+            props.setProperty("offset.storage", "org.apache.kafka.connect.storage.FileOffsetBackingStore");
+            props.setProperty("offset.storage.file.filename", "offsets.dat");
+            props.setProperty("offset.flush.interval.ms", "1000");
+            /* begin connector properties */
+            props.setProperty("database.hostname", "localhost");
+            props.setProperty("database.port", "3306");
+            props.setProperty("database.user", "devonk");
+            if (System.getenv("DBPASS") == null) {
+                throw new Exception("Set environment variable for DBPASS with the password to the database.");
+            }
+            props.setProperty("database.password", System.getenv("DBPASS"));
+            props.setProperty("database.server.id", "85744");
+            props.setProperty("database.server.name", "test");
+            props.setProperty("database.history",
+                    "io.debezium.relational.history.FileDatabaseHistory");
+            props.setProperty("database.history.file.filename",
+                    "dbhistory.dat");
+            props.setProperty("table.exclude.list", ".*_masked");
+            props.setProperty("secondsToClearout", "60");
         }
-        props.setProperty("database.password", System.getenv("DBPASS"));
-        props.setProperty("database.server.id", "85744");
-        props.setProperty("database.server.name", "test");
-        props.setProperty("database.history",
-                "io.debezium.relational.history.FileDatabaseHistory");
-        props.setProperty("database.history.file.filename",
-                "dbhistory.dat");
-        props.setProperty("table.exclude.list", ".*_masked");
+
+
         AtomicReference<Integer> i = new AtomicReference<>();
         i.set(0);
 
@@ -184,7 +196,7 @@ public class test {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-            }, 0, 60, TimeUnit.SECONDS);
+            }, 0, Long.parseLong(props.getProperty("secondsToClearout")), TimeUnit.SECONDS);
 
             ExecutorService executor = Executors.newSingleThreadExecutor();
             executor.execute(engine);
