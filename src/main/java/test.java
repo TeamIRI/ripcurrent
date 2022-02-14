@@ -17,10 +17,13 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 
 public class test {
+    static AtomicReference<HashMap<String, SclScript>> scripts = new AtomicReference<>();
     public static String sortCLScript(SclScript script) {
         StringBuilder sb = new StringBuilder();
         sb.append("/INFILE=stdin\n/PROCESS=CONCH\n");
@@ -43,6 +46,14 @@ public class test {
             // }
         }
         return sb.toString();
+    }
+
+    public static void clearOut(AtomicReference<Integer> i) throws IOException {
+        for (SclScript script : scripts.get().values()) {
+            script.getStdin().close();
+        }
+        scripts.set(new HashMap<>());
+        i.set(0);
     }
 
     public static void main(String[] args) throws Exception {
@@ -73,7 +84,7 @@ public class test {
         props.setProperty("table.exclude.list", ".*_masked");
         AtomicReference<Integer> i = new AtomicReference<>();
         i.set(0);
-        AtomicReference<HashMap<String, SclScript>> scripts = new AtomicReference<>();
+
         scripts.set(new HashMap<>());
         try (DebeziumEngine<ChangeEvent<String, String>> engine = DebeziumEngine.create(Json.class)
                 .using(props)
@@ -93,7 +104,7 @@ public class test {
                                 if (scripts.get() != null && scripts.get().values().size() > 0) {
                                     for (SclScript script : scripts.get().values()) {
 
-                                        if (!script.getTable().equals(jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString()) || !script.getFields().equals(columns)) {
+                                        if (!script.getTable().equals(jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString() + "_masked") || !script.getFields().equals(columns)) {
                                             count++;
                                             if (count == scripts.get().size()) {
                                                 makeNewScript = true;
@@ -112,7 +123,6 @@ public class test {
                                     } catch (IOException e) {
                                         e.printStackTrace();
                                     }
-//File tempFile = File.createTempFile("MyAppName-", ".tmp");
                                     assert tempFile != null;
                                     tempFile.deleteOnExit();
                                     try {
@@ -167,9 +177,18 @@ public class test {
                     }
                 })
                 .build()) {
+            ScheduledThreadPoolExecutor dispenser = new ScheduledThreadPoolExecutor(1);
+            dispenser.scheduleAtFixedRate(() -> {
+                try {
+                    clearOut(i);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }, 0, 60, TimeUnit.SECONDS);
 
             ExecutorService executor = Executors.newSingleThreadExecutor();
             executor.execute(engine);
+
         }
     }
 }
