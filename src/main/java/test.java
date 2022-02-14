@@ -36,11 +36,11 @@ public class test {
         count = 0;
         for (String field : script.getFields()) {
             count++;
-            if (count > 1) {
-                sb.append("/FIELD=(ENC_FP_").append(field).append("=enc_fp_aes256_alphanum(").append(field).append("), TYPE=ASCII, POSITION=").append(count).append(", ODEF=\"").append(field).append("\", SEPARATOR=\"\\t\")\n");
-            } else {
-                sb.append("/FIELD=(").append(field).append(", TYPE=ASCII, POSITION=").append(count).append(", SEPARATOR=\"\\t\")\n");
-            }
+            //    if (count > 1) {
+            sb.append("/FIELD=(ENC_FP_").append(field).append("=enc_fp_aes256_alphanum(").append(field).append("), TYPE=ASCII, POSITION=").append(count).append(", ODEF=\"").append(field).append("\", SEPARATOR=\"\\t\")\n");
+            //    } else {
+            //        sb.append("/FIELD=(").append(field).append(", TYPE=ASCII, POSITION=").append(count).append(", SEPARATOR=\"\\t\")\n");
+            // }
         }
         return sb.toString();
     }
@@ -70,6 +70,7 @@ public class test {
                 "io.debezium.relational.history.FileDatabaseHistory");
         props.setProperty("database.history.file.filename",
                 "dbhistory.dat");
+        props.setProperty("table.exclude.list", ".*_masked");
         AtomicReference<Integer> i = new AtomicReference<>();
         i.set(0);
         AtomicReference<HashMap<String, SclScript>> scripts = new AtomicReference<>();
