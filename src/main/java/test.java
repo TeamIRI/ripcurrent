@@ -19,7 +19,6 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-
 public class test {
     static AtomicReference<HashMap<String, SclScript>> scripts = new AtomicReference<>();
     public static String sortCLScript(SclScript script) {
@@ -92,7 +91,8 @@ public class test {
             props.setProperty("table.exclude.list", ".*_masked");
             props.setProperty("secondsToClearout", "60");
         }
-
+        DataClassLibrary dataClassLibrary = new DataClassLibrary("iriLibrary.dataclass");
+        RulesLibrary rulesLibrary = new RulesLibrary("iriLibrary.rules");
 
         AtomicReference<Integer> i = new AtomicReference<>();
         i.set(0);
