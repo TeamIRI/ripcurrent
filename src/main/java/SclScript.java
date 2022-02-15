@@ -7,7 +7,7 @@ import java.util.ArrayList;
 public class SclScript {
     String table;
     String DSN;
-    ArrayList<String> fields;
+    ArrayList<SclField> fields = new ArrayList<>();
     Process process;
     BufferedWriter stdin;
     BufferedReader stderr;
@@ -16,14 +16,16 @@ public class SclScript {
     SclScript(String table, String DSN, ArrayList<String> fields) {
         this.table = table + "_masked";
         this.DSN = DSN;
-        this.fields = fields;
+        for (String fieldName : fields) {
+            this.fields.add(new SclField(fieldName));
+        }
     }
 
-    public ArrayList<String> getFields() {
+    public ArrayList<SclField> getFields() {
         return fields;
     }
 
-    public void setFields(ArrayList<String> fields) {
+    public void setFields(ArrayList<SclField> fields) {
         this.fields = fields;
     }
 

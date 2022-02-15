@@ -9,15 +9,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 public class test {
     static AtomicReference<HashMap<String, SclScript>> scripts = new AtomicReference<>();
@@ -25,22 +23,23 @@ public class test {
         StringBuilder sb = new StringBuilder();
         sb.append("/INFILE=stdin\n/PROCESS=CONCH\n");
         int count = 0;
-        for (String field : script.getFields()) {
+        for (SclField field : script.getFields()) {
             count++;
-            sb.append("/FIELD=(").append(field).append(", TYPE=ASCII, POSITION=").append(count).append(", SEPARATOR=\"\\t\")\n");
+            sb.append("/FIELD=(").append(field.getName()).append(", TYPE=ASCII, POSITION=").append(count).append(", SEPARATOR=\"\\t\")\n");
         }
         sb.append("/STREAM\n");
         sb.append("/OUTFILE=\"").append(script.getTable()).append(";DSN=").append(script.getDSN()).append(";\"\n");
         sb.append("/PROCESS=ODBC\n");
         // sb.append("/UPDATE=(" + script.getFields().get(0) + ")\n");
         count = 0;
-        for (String field : script.getFields()) {
+        for (SclField field : script.getFields()) {
             count++;
             //    if (count > 1) {
-            sb.append("/FIELD=(ENC_FP_").append(field).append("=enc_fp_aes256_alphanum(").append(field).append("), TYPE=ASCII, POSITION=").append(count).append(", ODEF=\"").append(field).append("\", SEPARATOR=\"\\t\")\n");
-            //    } else {
-            //        sb.append("/FIELD=(").append(field).append(", TYPE=ASCII, POSITION=").append(count).append(", SEPARATOR=\"\\t\")\n");
-            // }
+            if (field.expressionApplied) {
+                sb.append("/FIELD=(ALTERED_").append(field.getName()).append("=").append(field.getExpression()).append(field.getName()).append("), TYPE=ASCII, POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", SEPARATOR=\"\\t\")\n");
+            } else {
+                sb.append("/FIELD=(").append(field.getName()).append(", TYPE=ASCII, POSITION=").append(count).append(", SEPARATOR=\"\\t\")\n");
+            }
         }
         return sb.toString();
     }
@@ -52,6 +51,20 @@ public class test {
         scripts.set(new HashMap<>());
         i.set(0);
     }
+
+    public static void classify(Set<Map.Entry<String, JsonElement>> values, DataClassLibrary dataClassLibrary, ArrayList<SclField> fields) {
+        int count = 0;
+        for (Map.Entry<String, JsonElement> value : values) {
+            for (Map.Entry<String, DataMatcher> entry : dataClassLibrary.dataMatcherMap.entrySet()) {
+                if (entry.getValue().isMatch(value.getValue().getAsString())) {
+                    fields.get(count).expressionApplied = true;
+                    fields.get(count).expression = entry.getKey();
+                }
+            }
+            count++;
+        }
+    }
+
 
     public static void main(String[] args) throws Exception {
         ArrayList<String> columns = new ArrayList<>();
@@ -92,7 +105,7 @@ public class test {
             props.setProperty("secondsToClearout", "60");
         }
         DataClassLibrary dataClassLibrary = new DataClassLibrary("iriLibrary.dataclass");
-        RulesLibrary rulesLibrary = new RulesLibrary("iriLibrary.rules");
+        //  RulesLibrary rulesLibrary = new RulesLibrary("iriLibrary.rules");
 
         AtomicReference<Integer> i = new AtomicReference<>();
         i.set(0);
@@ -116,7 +129,9 @@ public class test {
                                 if (scripts.get() != null && scripts.get().values().size() > 0) {
                                     for (SclScript script : scripts.get().values()) {
 
-                                        if (!script.getTable().equals(jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString() + "_masked") || !script.getFields().equals(columns)) {
+                                        if (!script.getTable().equals(jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString() + "_masked") || !script.getFields().stream()
+                                                .map(SclField::getName)
+                                                .collect(Collectors.toList()).equals(columns)) {
                                             count++;
                                             if (count == scripts.get().size()) {
                                                 makeNewScript = true;
@@ -140,9 +155,10 @@ public class test {
                                     try {
                                         FileWriter myWriter = new FileWriter(tempFile);
                                         scripts.get().put(i.get().toString(), new SclScript(jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString(), "localmysql", columns));
+                                        classify(Jobject_.entrySet(), dataClassLibrary, scripts.get().get(i.get().toString()).getFields());
                                         myWriter.write(sortCLScript(scripts.get().get(i.get().toString())));
                                         myWriter.close();
-                                        System.out.println("Successfully wrote SortCL script to the temporary file.");
+                                        LOG.info("Successfully wrote SortCL script to the temporary file.");
                                     } catch (IOException e) {
                                         System.out.println("An error occurred.");
                                         e.printStackTrace();
@@ -159,7 +175,7 @@ public class test {
                                 int ct = 0;
                                 for (Map.Entry<String, JsonElement> jj : Jobject_.entrySet()) {
                                     ct++;
-                                    System.out.println(jj.getValue());
+                                    LOG.info(String.valueOf(jj.getValue()));
                                     try {
                                         scripts.get().get(Integer.toString(count))
                                                 .getStdin().write(jj.getValue().getAsString());
