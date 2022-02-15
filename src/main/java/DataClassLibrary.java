@@ -24,7 +24,12 @@ public class DataClassLibrary {
                 Node nNode = nList.item(temp);
                 if (nNode.getNodeType() == Node.ELEMENT_NODE) {
                     Element eElement = (Element) nNode;
-                    String[] defaultRule = eElement.getElementsByTagName("defaultRule").item(0).getNodeValue().split("#");
+                    String[] defaultRule;
+                    try {
+                        defaultRule = eElement.getElementsByTagName("defaultRule").item(0).getNodeValue().split("#");
+                    } catch (NullPointerException e) {
+                        defaultRule = new String[]{"#", "enc_fp_aes256_alphanum"};
+                    }
                     NodeList matchersList = eElement.getElementsByTagName("matchers");
                     for (int temp2 = 0; temp2 < matchersList.getLength(); temp2++) {
                         Node nNode2 = matchersList.item(temp2);

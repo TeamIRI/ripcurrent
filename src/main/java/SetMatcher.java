@@ -1,3 +1,4 @@
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -10,7 +11,7 @@ public class SetMatcher implements DataMatcher {
     List<String> entries;
 
     SetMatcher(String setPath) throws IOException, URISyntaxException {
-        this.entries = Files.readAllLines(Paths.get(new URI(setPath)));
+        this.entries = Files.readAllLines(Paths.get(new URI(new File(setPath).toURI().toString())));
     }
 
     Boolean findMatch(String data) {

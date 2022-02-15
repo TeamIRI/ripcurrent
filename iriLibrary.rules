@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="ASCII"?>
+<rules:RuleLibrary xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:rules="http://rules/1.0">
+  <catalogs name="FieldEditor">
+    <matchers name="FieldEncodingRule_2022-01-20 11:28:13">
+      <rule href="#FieldEncodingRule"/>
+      <matcherDetails details="transferBatch_callEventDetails_mobileOriginatedCall_locationInformation_geographicalLocation_servingLocationDescription"/>
+    </matchers>
+    <matchers name="FieldEncodingRule_2022-01-20 11:28:14">
+      <rule href="#FieldEncodingRule"/>
+      <matcherDetails details="transferBatch_callEventDetails_mobileOriginatedCall_supplServiceUsedList_ssParameters"/>
+    </matchers>
+    <matchers name="FieldEncodingRule_2022-01-20 11:28:15">
+      <rule href="#FieldEncodingRule"/>
+      <matcherDetails details="transferBatch_callEventDetails_mobileOriginatedCall_camelServiceUsed_camelChargeInformation_taxInformation_taxableAmount"/>
+    </matchers>
+    <matchers name="FieldEncodingRule_2022-01-20 11:28:16">
+      <rule href="#FieldEncodingRule"/>
+      <matcherDetails details="transferBatch_callEventDetails_mobileTerminatedCall_locationInformation_networkLocation_cellId"/>
+    </matchers>
+    <matchers name="FieldEncodingRule_2022-01-20 11:28:17">
+      <rule href="#FieldEncodingRule"/>
+      <matcherDetails details="transferBatch_callEventDetails_mobileTerminatedCall_basicServiceUsedList_hSCSDInformation_hSCSDParameterModificationList_modificationTimestamp_localTimeStamp"/>
+    </matchers>
+    <matchers name="FieldEncodingRule_2022-01-20 11:28:18">
+      <rule href="#FieldEncodingRule"/>
+      <matcherDetails details="transferBatch_callEventDetails_mobileTerminatedCall_camelServiceUsed_camelChargeInformation_taxInformation_taxValue"/>
+    </matchers>
+    <matchers name="FieldEncodingRule_2022-01-20 11:28:19">
+      <rule href="#FieldEncodingRule"/>
+      <matcherDetails details="transferBatch_callEventDetails_supplServiceEvent_locationInformation_geographicalLocation_servingLocationDescription"/>
+    </matchers>
+    <matchers name="FieldEncodingRule_2022-01-20 11:28:20">
+      <rule href="#FieldEncodingRule"/>
+      <matcherDetails details="transferBatch_callEventDetails_serviceCentreUsage_chargeInformation_callTypeGroup_callTypeLevel3"/>
+    </matchers>
+    <matchers name="FieldEncodingRule_2022-01-20 11:28:21">
+      <rule href="#FieldEncodingRule"/>
+      <matcherDetails details="transferBatch_callEventDetails_valueAddedService_valueAddedServiceUsed_chargeInformation_chargeDetailList_multiRateIndicator"/>
+    </matchers>
+    <matchers name="FieldEncodingRule_2022-01-20 11:28:22">
+      <rule href="#FieldEncodingRule"/>
+      <matcherDetails details="transferBatch_callEventDetails_gprsCall_gprsServiceUsed_gprsServiceUsageList_qosUsed_gsmQoSUsed_precedence"/>
+    </matchers>
+    <matchers name="FieldEncodingRule_2022-01-20 11:28:23">
+      <rule href="#FieldEncodingRule"/>
+      <matcherDetails details="transferBatch_callEventDetails_gprsCall_camelServiceUsed_camelChargeInformation_taxInformation_taxCode"/>
+    </matchers>
+    <matchers name="FieldEncodingRule_2022-01-20 11:28:24">
+      <rule href="#FieldEncodingRule"/>
+      <matcherDetails details="transferBatch_callEventDetails_contentTransaction_servingPartiesInformation_internetServiceProviderIdList_ispIdType"/>
+    </matchers>
+    <matchers name="FieldEncodingRule_2022-01-20 11:28:25">
+      <rule href="#FieldEncodingRule"/>
+      <matcherDetails details="transferBatch_callEventDetails_locationService_lCSSPInformation_iSPList_ispIdentifier"/>
+    </matchers>
+    <matchers name="FieldEncodingRule_2022-01-20 11:28:26">
+      <rule href="#FieldEncodingRule"/>
+      <matcherDetails details="transferBatch_auditControlInfo_totalTaxRefund"/>
+    </matchers>
+    <matchers name="FieldEncodingRule_2022-01-20 11:28:27">
+      <rule href="#FieldEncodingRule"/>
+      <matcherDetails details="notification_operatorSpecInformation"/>
+    </matchers>
+    <matchers name="FieldEncodingRule2_2022-01-20 16:11:17">
+      <rule href="#FieldEncodingRule2"/>
+      <matcherDetails details="transferBatch_batchControlInfo_fileCreationTimeStamp_utcTimeOffset"/>
+    </matchers>
+    <matchers name="FieldEncodingRule2_2022-01-20 16:11:18">
+      <rule href="#FieldEncodingRule2"/>
+      <matcherDetails details="transferBatch_callEventDetails_mobileOriginatedCall_basicCallInformation_destination_dialledDigits"/>
+    </matchers>
+    <matchers name="FieldEncodingRule2_2022-01-20 16:11:19">
+      <rule href="#FieldEncodingRule2"/>
+      <matcherDetails details="transferBatch_callEventDetails_mobileOriginatedCall_basicServiceUsedList_chargeInformationList_chargeDetailList_dayCategory"/>
+    </matchers>
+    <matchers name="FieldEncodingRule2_2022-01-20 16:11:20">
+      <rule href="#FieldEncodingRule2"/>
+      <matcherDetails details="transferBatch_callEventDetails_mobileOriginatedCall_supplServiceUsedList_chargeInformation_taxInformation_taxableAmount"/>
+    </matchers>
+    <matchers name="FieldEncodingRule2_2022-01-20 16:11:21">
+      <rule href="#FieldEncodingRule2"/>
+      <matcherDetails details="transferBatch_callEventDetails_mobileOriginatedCall_valueAddedServiceUsedList_chargeInformation_chargeDetailList_multiRateIndicator"/>
+    </matchers>
+    <matchers name="FieldEncodingRule2_2022-01-20 16:11:22">
+      <rule href="#FieldEncodingRule2"/>
+      <matcherDetails details="transferBatch_callEventDetails_mobileTerminatedCall_basicServiceUsedList_chargeInformationList_chargeDetailList_chargedUnits"/>
+    </matchers>
+    <matchers name="FieldEncodingRule2_2022-01-20 16:11:23">
+      <rule href="#FieldEncodingRule2"/>
+      <matcherDetails details="transferBatch_callEventDetails_mobileTerminatedCall_supplServiceUsedList_basicServiceCodeList_bearerServiceCode"/>
+    </matchers>
+    <matchers name="FieldEncodingRule2_2022-01-20 16:11:24">
+      <rule href="#FieldEncodingRule2"/>
+      <matcherDetails details="transferBatch_callEventDetails_mobileTerminatedCall_valueAddedServiceUsedList_chargeInformation_taxInformation_taxableAmount"/>
+    </matchers>
+    <matchers name="FieldEncodingRule2_2022-01-20 16:11:25">
+      <rule href="#FieldEncodingRule2"/>
+      <matcherDetails details="transferBatch_callEventDetails_supplServiceEvent_simToolkitIndicator"/>
+    </matchers>
+    <matchers name="FieldEncodingRule2_2022-01-20 16:11:26">
+      <rule href="#FieldEncodingRule2"/>
+      <matcherDetails details="transferBatch_callEventDetails_valueAddedService_valueAddedServiceUsed_chargingTimeStamp_localTimeStamp"/>
+    </matchers>
+    <matchers name="FieldEncodingRule2_2022-01-20 16:11:27">
+      <rule href="#FieldEncodingRule2"/>
+      <matcherDetails details="transferBatch_callEventDetails_gprsCall_gprsLocationInformation_geographicalLocation_latitude"/>
+    </matchers>
+    <matchers name="FieldEncodingRule2_2022-01-20 16:11:28">
+      <rule href="#FieldEncodingRule2"/>
+      <matcherDetails details="transferBatch_callEventDetails_gprsCall_camelServiceUsed_camelChargeInformation_chargedItem"/>
+    </matchers>
+    <matchers name="FieldEncodingRule2_2022-01-20 16:11:29">
+      <rule href="#FieldEncodingRule2"/>
+      <matcherDetails details="transferBatch_callEventDetails_contentTransaction_contentTransactionBasicInfo_orderPlacedTimeStamp_utcTimeOffsetCode"/>
+    </matchers>
+    <matchers name="FieldEncodingRule2_2022-01-20 16:11:30">
+      <rule href="#FieldEncodingRule2"/>
+      <matcherDetails details="transferBatch_callEventDetails_contentTransaction_contentServiceUsed_advisedChargeInformation_paymentMethod"/>
+    </matchers>
+    <matchers name="FieldEncodingRule2_2022-01-20 16:11:31">
+      <rule href="#FieldEncodingRule2"/>
+      <matcherDetails details="transferBatch_callEventDetails_locationService_locationServiceUsage_chargeInformationList_chargeDetailList_chargeDetailTimeStamp_localTimeStamp"/>
+    </matchers>
+    <matchers name="FieldEncodingRule2_2022-01-20 16:11:32">
+      <rule href="#FieldEncodingRule2"/>
+      <matcherDetails details="notification_operatorSpecInformation"/>
+    </matchers>
+    <matchers name="FieldStringRule_2022-01-26 16:50:55">
+      <rule href="#FieldStringRule"/>
+      <matcherDetails details="FIELD1"/>
+    </matchers>
+    <matchers name="FieldStringRule_2022-01-26 16:50:59">
+      <rule href="#FieldStringRule"/>
+      <matcherDetails details="FIELD2"/>
+    </matchers>
+    <matchers name="FieldSetRule_2022-01-27 14:23:02">
+      <rule href="#FieldSetRule"/>
+      <matcherDetails details="transferBatch_batchControlInfo_sender"/>
+    </matchers>
+    <matchers name="FieldSetRule_2022-01-27 14:23:07">
+      <rule href="#FieldSetRule"/>
+      <matcherDetails details="transferBatch_batchControlInfo_recipient"/>
+    </matchers>
+    <matchers name="FieldEncodingRule_2022-01-31 12:40:00">
+      <rule href="#FieldEncodingRule"/>
+      <matcherDetails details="TRANSFERBATCH_BATCHCONTROLINFO_FILESEQUENCENUMBER"/>
+    </matchers>
+    <matchers name="FieldEncodingRule_2022-01-31 12:40:01">
+      <rule href="#FieldEncodingRule"/>
+      <matcherDetails details="TRANSFERBATCH_CALLEVENTDETAILS_MOBILEORIGINATEDCALL_BASICCALLINFORMATION_NETWORKTYPE"/>
+    </matchers>
+    <matchers name="FieldEncodingRule_2022-01-31 12:40:02">
+      <rule href="#FieldEncodingRule"/>
+      <matcherDetails details="TRANSFERBATCH_CALLEVENTDETAILS_MOBILEORIGINATEDCALL_BASICSERVICEUSEDLIST_CHARGEINFORMATIONLIST_CHARGEDETAILLIST_DAYCATEGORYSUBTYPE"/>
+    </matchers>
+    <matchers name="FieldEncodingRule_2022-01-31 12:40:03">
+      <rule href="#FieldEncodingRule"/>
+      <matcherDetails details="TRANSFERBATCH_CALLEVENTDETAILS_MOBILEORIGINATEDCALL_CAMELSERVICEUSED_CAMELSERVICEKEY"/>
+    </matchers>
+    <matchers name="FieldEncodingRule_2022-01-31 12:40:04">
+      <rule href="#FieldEncodingRule"/>
+      <matcherDetails details="TRANSFERBATCH_CALLEVENTDETAILS_MOBILEORIGINATEDCALL_VALUEADDEDSERVICEUSEDLIST_CHARGEINFORMATION_DISCOUNTINFORMATION_DISCOUNTCODE"/>
+    </matchers>
+    <matchers name="FieldEncodingRule_2022-01-31 12:40:05">
+      <rule href="#FieldEncodingRule"/>
+      <matcherDetails details="TRANSFERBATCH_CALLEVENTDETAILS_MOBILETERMINATEDCALL_BASICSERVICEUSEDLIST_CHARGEINFORMATIONLIST_CHARGEDETAILLIST_CHARGEDUNITS"/>
+    </matchers>
+    <matchers name="FieldEncodingRule_2022-01-31 12:40:06">
+      <rule href="#FieldEncodingRule"/>
+      <matcherDetails details="TRANSFERBATCH_CALLEVENTDETAILS_MOBILETERMINATEDCALL_CAMELSERVICEUSED_CAMELSERVERADDRESS"/>
+    </matchers>
+    <matchers name="FieldEncodingRule_2022-01-31 12:40:07">
+      <rule href="#FieldEncodingRule"/>
+      <matcherDetails details="TRANSFERBATCH_CALLEVENTDETAILS_MOBILETERMINATEDCALL_VALUEADDEDSERVICEUSEDLIST_CHARGEINFORMATION_TAXINFORMATION_CHARGETYPE"/>
+    </matchers>
+    <matchers name="FieldEncodingRule_2022-01-31 12:40:08">
+      <rule href="#FieldEncodingRule"/>
+      <matcherDetails details="TRANSFERBATCH_CALLEVENTDETAILS_SUPPLSERVICEEVENT_SUPPLSERVICEUSED_CHARGEINFORMATION_TAXINFORMATION_TAXABLEAMOUNT"/>
+    </matchers>
+    <matchers name="FieldEncodingRule_2022-01-31 12:40:09">
+      <rule href="#FieldEncodingRule"/>
+      <matcherDetails details="TRANSFERBATCH_CALLEVENTDETAILS_VALUEADDEDSERVICE_CHARGEABLESUBSCRIBER_MINCHARGEABLESUBSCRIBER_MDN"/>
+    </matchers>
+    <matchers name="FieldEncodingRule_2022-01-31 12:40:10">
+      <rule href="#FieldEncodingRule"/>
+      <matcherDetails details="TRANSFERBATCH_CALLEVENTDETAILS_GPRSCALL_GPRSLOCATIONINFORMATION_GEOGRAPHICALLOCATION_SERVINGNETWORK"/>
+    </matchers>
+    <matchers name="FieldEncodingRule_2022-01-31 12:40:11">
+      <rule href="#FieldEncodingRule"/>
+      <matcherDetails details="TRANSFERBATCH_CALLEVENTDETAILS_GPRSCALL_GPRSSERVICEUSED_CHARGEINFORMATIONLIST_DISCOUNTINFORMATION_DISCOUNT"/>
+    </matchers>
+    <matchers name="FieldEncodingRule_2022-01-31 12:40:12">
+      <rule href="#FieldEncodingRule"/>
+      <matcherDetails details="TRANSFERBATCH_CALLEVENTDETAILS_GPRSCALL_VALUEADDEDSERVICEUSEDLIST_CHARGEINFORMATION_DISCOUNTINFORMATION_DISCOUNTCODE"/>
+    </matchers>
+    <matchers name="FieldEncodingRule_2022-01-31 12:40:13">
+      <rule href="#FieldEncodingRule"/>
+      <matcherDetails details="TRANSFERBATCH_CALLEVENTDETAILS_CONTENTTRANSACTION_CONTENTSERVICEUSED_CHARGEINFORMATIONLIST_TAXINFORMATION_TAXABLEAMOUNT"/>
+    </matchers>
+    <matchers name="FieldEncodingRule_2022-01-31 12:40:14">
+      <rule href="#FieldEncodingRule"/>
+      <matcherDetails details="TRANSFERBATCH_CALLEVENTDETAILS_LOCATIONSERVICE_LOCATIONSERVICEUSAGE_CHARGEINFORMATIONLIST_CALLTYPEGROUP_CALLEDCOUNTRYCODE"/>
+    </matchers>
+    <matchers name="FieldEncodingRule_2022-01-31 12:40:15">
+      <rule href="#FieldEncodingRule"/>
+      <matcherDetails details="NOTIFICATION_OPERATORSPECINFORMATION"/>
+    </matchers>
+    <matchers name="FieldPseudonymRule_2022-02-04 08:57:48">
+      <rule href="#FieldPseudonymRule"/>
+      <matcherDetails details="TRANSFERBATCH_BATCHCONTROLINFO_SENDER"/>
+    </matchers>
+    <matchers name="FieldPseudonymRule_2022-02-04 08:57:54">
+      <rule href="#FieldPseudonymRule"/>
+      <matcherDetails details="TRANSFERBATCH_BATCHCONTROLINFO_RECIPIENT"/>
+    </matchers>
+    <matchers name="FieldPseudonymRule2_2022-02-04 08:58:42">
+      <rule href="#FieldPseudonymRule2"/>
+      <matcherDetails details="TRANSFERBATCH_BATCHCONTROLINFO_FILECREATIONTIMESTAMP_LOCALTI"/>
+    </matchers>
+    <matchers name="FieldPseudonymRule2_2022-02-04 08:58:54">
+      <rule href="#FieldPseudonymRule2"/>
+      <matcherDetails details="TRANSFERBATCH_BATCHCONTROLINFO_TRANSFERCUTOFFTIMESTAMP_LOCAL"/>
+    </matchers>
+    <matchers name="FieldPseudonymRule2_2022-02-04 08:59:00">
+      <rule href="#FieldPseudonymRule2"/>
+      <matcherDetails details="TRANSFERBATCH_BATCHCONTROLINFO_FILEAVAILABLETIMESTAMP_LOCALTIMESTAMP"/>
+    </matchers>
+  </catalogs>
+  <rules xsi:type="rules:FieldRule" name="FieldEncodingRule" editor="encodeFunctionWizard">
+    <properties fieldRulePropertyType="EXPRESSION" value="decode_hex(${FIELDNAME})"/>
+    <properties fieldRulePropertyType="NAME" value="DEC_HEX_${FIELDNAME}"/>
+  </rules>
+  <rules xsi:type="rules:FieldRule" name="FieldEncodingRule2" editor="encodeFunctionWizard">
+    <properties fieldRulePropertyType="EXPRESSION" value="encode_hex(${FIELDNAME})"/>
+    <properties fieldRulePropertyType="NAME" value="ENC_HEX_${FIELDNAME}"/>
+  </rules>
+  <rules xsi:type="rules:FieldRule" name="FieldStringRule" editor="stringFunctionWizard">
+    <properties fieldRulePropertyType="EXPRESSION" value="toupper(${FIELDNAME})"/>
+    <properties fieldRulePropertyType="NAME" value="TO_UPPER_${FIELDNAME}"/>
+  </rules>
+  <rules xsi:type="rules:FieldRule" name="FieldSetRule" editor="setFileWizard">
+    <properties fieldRulePropertyType="SET" value="&quot;C:/IRI/cosort105/sets/tadig-codes.set&quot; SELECT=ANY"/>
+    <properties fieldRulePropertyType="NAME" value="SET_${FIELDNAME}"/>
+  </rules>
+  <rules xsi:type="rules:FieldRule" name="FieldPseudonymRule" editor="pseudoWizard">
+    <properties fieldRulePropertyType="NAME" value="PSEUDO_${FIELDNAME}"/>
+    <properties fieldRulePropertyType="SET" value="&quot;C:/IRI/cosort105/sets/tadig-codes.set&quot;"/>
+  </rules>
+  <rules xsi:type="rules:FieldRule" name="FieldPseudonymRule2" editor="pseudoWizard">
+    <properties fieldRulePropertyType="NAME" value="PSEUDO_${FIELDNAME}"/>
+    <properties fieldRulePropertyType="SET" value="&quot;C:/Eclipse/Workbench_10_08/workspace/ASN.1/timestamps.set&quot;"/>
+  </rules>
+</rules:RuleLibrary>
+

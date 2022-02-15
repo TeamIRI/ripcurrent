@@ -27,17 +27,15 @@ public class RulesLibrary {
                     NodeList matchersList = eElement.getElementsByTagName("properties");
                     for (int temp2 = 0; temp2 < matchersList.getLength(); temp2++) {
                         Node nNode2 = matchersList.item(temp2);
-                        if (nNode2.getAttributes().getNamedItem("type") != null) {
                             switch (nNode2.getAttributes().getNamedItem("fieldRulePropertyType").getNodeValue()) {
                                 case "EXPRESSION":
                                     rules.put(((Element) nNode).getAttribute("name"), nNode2.getAttributes().getNamedItem("value").getNodeValue().replace("(${FIELDNAME})", ""));
                                     break;
                                 case "SET":
-                                    rules.put(((Element) nNode).getAttribute("name"), nNode2.getAttributes().getNamedItem("value").getNodeValue().replace("&quot;", ""));
+                                    rules.put(((Element) nNode).getAttribute("name"), nNode2.getAttributes().getNamedItem("value").getNodeValue().replace("&quot;", "").replace(" SELECT=ANY", ""));
                                     break;
                                 default:
                             }
-                        }
                     }
                 }
             }
