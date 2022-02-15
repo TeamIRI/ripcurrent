@@ -10,9 +10,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class DataClassLibrary {
-    Map<String, DataMatcher> dataMatcherMap = new HashMap<>();
+    Map<Map<String, String>, DataMatcher> dataMatcherMap = new HashMap<>();
 
-    DataClassLibrary(String filePath) {
+    DataClassLibrary(String filePath, RulesLibrary rulesLibrary) {
         try {
             File dataClassLibraryFile = new File(filePath);
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
@@ -34,9 +34,10 @@ public class DataClassLibrary {
                     for (int temp2 = 0; temp2 < matchersList.getLength(); temp2++) {
                         Node nNode2 = matchersList.item(temp2);
                         if (nNode2.getAttributes().getNamedItem("type") != null && nNode2.getAttributes().getNamedItem("type").getNodeValue().equals("FILE")) {
-                            dataMatcherMap.put(defaultRule[1], new SetMatcher(nNode2.getAttributes().getNamedItem("details").getNodeValue()));
+                            rulesLibrary.getRules().put(((Element) nNode).getAttribute("name"), defaultRule[1]);
+                            dataMatcherMap.put(rulesLibrary.getRules(), new SetMatcher(nNode2.getAttributes().getNamedItem("details").getNodeValue()));
                         } else {
-                            dataMatcherMap.put(defaultRule[1], new PatternMatcher(nNode2.getAttributes().getNamedItem("details").getNodeValue()));
+                            dataMatcherMap.put(rulesLibrary.getRules(), new PatternMatcher(nNode2.getAttributes().getNamedItem("details").getNodeValue()));
                         }
                     }
                 }

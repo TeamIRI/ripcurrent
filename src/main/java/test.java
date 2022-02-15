@@ -36,7 +36,7 @@ public class test {
             count++;
             //    if (count > 1) {
             if (field.expressionApplied) {
-                sb.append("/FIELD=(ALTERED_").append(field.getName()).append("=").append(field.getExpression()).append(field.getName()).append("), TYPE=ASCII, POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", SEPARATOR=\"\\t\")\n");
+                sb.append("/FIELD=(ALTERED_").append(field.getName()).append("=").append(field.getExpression()).append("(").append(field.getName()).append("), TYPE=ASCII, POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", SEPARATOR=\"\\t\")\n");
             } else {
                 sb.append("/FIELD=(").append(field.getName()).append(", TYPE=ASCII, POSITION=").append(count).append(", SEPARATOR=\"\\t\")\n");
             }
@@ -55,10 +55,10 @@ public class test {
     public static void classify(Set<Map.Entry<String, JsonElement>> values, DataClassLibrary dataClassLibrary, ArrayList<SclField> fields) {
         int count = 0;
         for (Map.Entry<String, JsonElement> value : values) {
-            for (Map.Entry<String, DataMatcher> entry : dataClassLibrary.dataMatcherMap.entrySet()) {
+            for (Map.Entry<Map<String, String>, DataMatcher> entry : dataClassLibrary.dataMatcherMap.entrySet()) {
                 if (entry.getValue().isMatch(value.getValue().getAsString())) {
                     fields.get(count).expressionApplied = true;
-                    fields.get(count).expression = entry.getKey();
+                    fields.get(count).expression = (String) entry.getKey().values().toArray()[0];
                 }
             }
             count++;
@@ -104,7 +104,7 @@ public class test {
             props.setProperty("table.exclude.list", ".*_masked");
             props.setProperty("secondsToClearout", "60");
         }
-        DataClassLibrary dataClassLibrary = new DataClassLibrary("iriLibrary.dataclass");
+        DataClassLibrary dataClassLibrary = new DataClassLibrary("iriLibrary.dataclass", new RulesLibrary());
         //  RulesLibrary rulesLibrary = new RulesLibrary("iriLibrary.rules");
 
         AtomicReference<Integer> i = new AtomicReference<>();
