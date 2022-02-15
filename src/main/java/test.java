@@ -59,6 +59,7 @@ public class test {
                 if (entry.getValue().isMatch(value.getValue().getAsString())) {
                     fields.get(count).expressionApplied = true;
                     fields.get(count).expression = (String) entry.getKey().values().toArray()[0];
+                    break;
                 }
             }
             count++;
