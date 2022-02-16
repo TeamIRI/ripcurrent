@@ -1,20 +1,20 @@
 apply plugin: 'java'
 apply plugin: 'application'
 
-mainClassName = 'test'
+mainClassName = 'Main'
+
 repositories {
     mavenCentral()
 }
+
 jar {
     archiveBaseName = 'gs-gradle'
     archiveVersion = '0.1.0'
 }
-// end::jar[]
 
-// tag::dependencies[]
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
-// https://mvnrepository.com/artifact/org.dcm4che/dcm4che-imageio
+
 dependencies {
     // https://mvnrepository.com/artifact/io.debezium/debezium-embedded
     implementation group: 'io.debezium', name: 'debezium-embedded', version: '1.7.0.Final'
@@ -23,6 +23,5 @@ dependencies {
 // https://mvnrepository.com/artifact/io.debezium/debezium-api
     implementation group: 'io.debezium', name: 'debezium-api', version: '1.7.0.Final'
     implementation 'com.google.code.gson:gson:2.8.9'
-
-
 }
+

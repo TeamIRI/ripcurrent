@@ -17,8 +17,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-public class test {
+public class Main {
     static AtomicReference<HashMap<String, SclScript>> scripts = new AtomicReference<>();
+
     public static String sortCLScript(SclScript script) {
         StringBuilder sb = new StringBuilder();
         sb.append("/INFILE=stdin\n/PROCESS=CONCH\n");
@@ -69,7 +70,7 @@ public class test {
 
     public static void main(String[] args) throws Exception {
         ArrayList<String> columns = new ArrayList<>();
-        Logger LOG = LoggerFactory.getLogger(test.class);
+        Logger LOG = LoggerFactory.getLogger(Main.class);
         LOG.info("Launching Debezium embedded engine");
         Properties props;
         try (InputStream input = new FileInputStream("config.properties")) {
