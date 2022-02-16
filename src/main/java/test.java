@@ -70,7 +70,7 @@ public class test {
     public static void main(String[] args) throws Exception {
         ArrayList<String> columns = new ArrayList<>();
         Logger LOG = LoggerFactory.getLogger(test.class);
-        System.out.println("Launching Debezium embedded engine");
+        LOG.info("Launching Debezium embedded engine");
         Properties props;
         try (InputStream input = new FileInputStream("config.properties")) {
 
@@ -159,9 +159,9 @@ public class test {
                                         classify(Jobject_.entrySet(), dataClassLibrary, scripts.get().get(i.get().toString()).getFields());
                                         myWriter.write(sortCLScript(scripts.get().get(i.get().toString())));
                                         myWriter.close();
-                                        System.out.println("Successfully wrote SortCL script to the temporary file.");
+                                        LOG.info("Successfully wrote SortCL script to the temporary file.");
                                     } catch (IOException e) {
-                                        System.out.println("An error occurred.");
+                                        LOG.error("An error occurred when writing SortCL script to a temporary file.");
                                         e.printStackTrace();
                                     }
 
@@ -176,7 +176,7 @@ public class test {
                                 int ct = 0;
                                 for (Map.Entry<String, JsonElement> jj : Jobject_.entrySet()) {
                                     ct++;
-                                    System.out.println(String.valueOf(jj.getValue()));
+                                    LOG.debug(String.valueOf(jj.getValue()));
                                     try {
                                         scripts.get().get(Integer.toString(count))
                                                 .getStdin().write(jj.getValue().getAsString());
