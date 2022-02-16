@@ -6,6 +6,8 @@ import org.w3c.dom.NodeList;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,7 +37,12 @@ public class DataClassLibrary {
                         Node nNode2 = matchersList.item(temp2);
                         if (nNode2.getAttributes().getNamedItem("type") != null && nNode2.getAttributes().getNamedItem("type").getNodeValue().equals("FILE")) {
                             rulesLibrary.getRules().put(((Element) nNode).getAttribute("name"), defaultRule[1]);
-                            dataMatcherMap.put(rulesLibrary.getRules(), new SetMatcher(nNode2.getAttributes().getNamedItem("details").getNodeValue()));
+                            try {
+                                dataMatcherMap.put(rulesLibrary.getRules(), new SetMatcher(nNode2.getAttributes().getNamedItem("details").getNodeValue()));
+                            }
+                            catch (IOException | URISyntaxException e){
+                                e.printStackTrace();
+                            }
                         } else {
                             dataMatcherMap.put(rulesLibrary.getRules(), new PatternMatcher(nNode2.getAttributes().getNamedItem("details").getNodeValue()));
                         }
