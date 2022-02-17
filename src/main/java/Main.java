@@ -197,9 +197,10 @@ public class Main {
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                 }
-
+                                if (makeNewScript) {
+                                    i.set(i.get() + 1);
+                                }
                                 columns.clear();
-                                i.set(i.get() + 1);
                             }
                         } catch (NullPointerException ee) {
                             ee.printStackTrace();

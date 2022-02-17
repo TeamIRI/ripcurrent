@@ -35,16 +35,16 @@ public class DataClassLibrary {
                     NodeList matchersList = eElement.getElementsByTagName("matchers");
                     for (int temp2 = 0; temp2 < matchersList.getLength(); temp2++) {
                         Node nNode2 = matchersList.item(temp2);
+                        HashMap<String, String> ruleMap = new HashMap<String, String>();
+                        ruleMap.put(((Element) nNode).getAttribute("name"), defaultRule[1]);
                         if (nNode2.getAttributes().getNamedItem("type") != null && nNode2.getAttributes().getNamedItem("type").getNodeValue().equals("FILE")) {
-                            rulesLibrary.getRules().put(((Element) nNode).getAttribute("name"), defaultRule[1]);
                             try {
-                                dataMatcherMap.put(rulesLibrary.getRules(), new SetMatcher(nNode2.getAttributes().getNamedItem("details").getNodeValue()));
-                            }
-                            catch (IOException | URISyntaxException e){
+                                dataMatcherMap.put(ruleMap, new SetMatcher(nNode2.getAttributes().getNamedItem("details").getNodeValue()));
+                            } catch (IOException | URISyntaxException e) {
                                 e.printStackTrace();
                             }
                         } else {
-                            dataMatcherMap.put(rulesLibrary.getRules(), new PatternMatcher(nNode2.getAttributes().getNamedItem("details").getNodeValue()));
+                            dataMatcherMap.put(ruleMap, new PatternMatcher(nNode2.getAttributes().getNamedItem("details").getNodeValue()));
                         }
                     }
                 }
