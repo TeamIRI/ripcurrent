@@ -1,3 +1,4 @@
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -26,7 +27,7 @@ public class Main {
         int count = 0;
         for (SclField field : script.getFields()) {
             count++;
-            sb.append("/FIELD=(").append(field.getName()).append(", TYPE=ASCII, POSITION=").append(count).append(", SEPARATOR=\"\\t\")\n");
+            sb.append("/FIELD=(").append(field.getName()).append(", TYPE=").append("ASCII").append(", POSITION=").append(count).append(", SEPARATOR=\"\\t\")\n");
         }
         sb.append("/STREAM\n");
         sb.append("/OUTFILE=\"").append(script.getTable()).append(";DSN=").append(script.getDSN()).append(";\"\n");
@@ -37,9 +38,9 @@ public class Main {
             count++;
             //    if (count > 1) {
             if (field.expressionApplied) {
-                sb.append("/FIELD=(ALTERED_").append(field.getName()).append("=").append(field.getExpression()).append("(").append(field.getName()).append("), TYPE=ASCII, POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", SEPARATOR=\"\\t\")\n");
+                sb.append("/FIELD=(ALTERED_").append(field.getName()).append("=").append(field.getExpression()).append("(").append(field.getName()).append("), TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", SEPARATOR=\"\\t\")\n");
             } else {
-                sb.append("/FIELD=(").append(field.getName()).append(", TYPE=ASCII, POSITION=").append(count).append(", SEPARATOR=\"\\t\")\n");
+                sb.append("/FIELD=(").append(field.getName()).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", SEPARATOR=\"\\t\")\n");
             }
         }
         return sb.toString();
@@ -106,7 +107,7 @@ public class Main {
             props.setProperty("table.exclude.list", ".*_masked");
             props.setProperty("secondsToClearout", "60");
         }
-        DataClassLibrary dataClassLibrary = new DataClassLibrary("iriLibrary.dataclass", new RulesLibrary());
+        DataClassLibrary dataClassLibrary = new DataClassLibrary("iriLibrary.dataclass");
         //  RulesLibrary rulesLibrary = new RulesLibrary("iriLibrary.rules");
 
         AtomicReference<Integer> i = new AtomicReference<>();
@@ -157,6 +158,28 @@ public class Main {
                                     try {
                                         FileWriter myWriter = new FileWriter(tempFile);
                                         scripts.get().put(i.get().toString(), new SclScript(jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString(), "localmysql", columns));
+                                        JsonArray fieldsArray = jsonObject.get("schema").getAsJsonObject().get("fields").getAsJsonArray().get(0).getAsJsonObject().get("fields").getAsJsonArray();
+                                        int loopTrack = 0;
+                                        for (JsonElement object : fieldsArray) {
+                                            String type = object.getAsJsonObject().get("type").getAsString();
+                                            JsonElement name = object.getAsJsonObject().get("name");
+                                            if (type == null) {
+                                                loopTrack++;
+                                                continue;
+                                            }
+                                            switch (type) {
+                                                case "int32":
+                                                    if (name == null) {
+                                                        scripts.get().get(i.get().toString()).getFields().get(loopTrack).setDataType("WHOLE_NUMBER");
+                                                    } else {
+                                                        scripts.get().get(i.get().toString()).getFields().get(loopTrack).setDataType("ISO_DATE");
+                                                    }
+                                                    break;
+                                                default:
+
+                                            }
+                                            loopTrack++;
+                                        }
                                         classify(Jobject_.entrySet(), dataClassLibrary, scripts.get().get(i.get().toString()).getFields());
                                         myWriter.write(sortCLScript(scripts.get().get(i.get().toString())));
                                         myWriter.close();

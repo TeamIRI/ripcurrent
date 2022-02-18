@@ -2,11 +2,12 @@ public class SclField {
     String name;
     Boolean expressionApplied;
     String expression;
+    String dataType;
 
     SclField(String name) {
         this.name = name;
         this.expressionApplied = false;
-
+        this.dataType = "ASCII";
     }
 
     public String getName() {
@@ -31,5 +32,13 @@ public class SclField {
 
     public void setExpression(String expression) {
         this.expression = expression;
+    }
+
+    public String getDataType() {
+        return dataType;
+    }
+
+    public void setDataType(String dataType) {
+        this.dataType = dataType;
     }
 }

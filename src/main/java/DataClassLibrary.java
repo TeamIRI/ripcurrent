@@ -14,7 +14,7 @@ import java.util.Map;
 public class DataClassLibrary {
     Map<Map<String, String>, DataMatcher> dataMatcherMap = new HashMap<>();
 
-    DataClassLibrary(String filePath, RulesLibrary rulesLibrary) {
+    DataClassLibrary(String filePath) {
         try {
             File dataClassLibraryFile = new File(filePath);
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
@@ -35,7 +35,7 @@ public class DataClassLibrary {
                     NodeList matchersList = eElement.getElementsByTagName("matchers");
                     for (int temp2 = 0; temp2 < matchersList.getLength(); temp2++) {
                         Node nNode2 = matchersList.item(temp2);
-                        HashMap<String, String> ruleMap = new HashMap<String, String>();
+                        HashMap<String, String> ruleMap = new HashMap<>();
                         ruleMap.put(((Element) nNode).getAttribute("name"), defaultRule[1]);
                         if (nNode2.getAttributes().getNamedItem("type") != null && nNode2.getAttributes().getNamedItem("type").getNodeValue().equals("FILE")) {
                             try {
