@@ -13,13 +13,23 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class Main {
     static AtomicReference<HashMap<String, SclScript>> scripts = new AtomicReference<>();
+    private static final Logger LOG = LoggerFactory.getLogger(Main.class);
+
+    private static void awaitTermination(ExecutorService executor) {
+        try {
+            while (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
+                LOG.info("Waiting another 10 seconds for the embedded engine to complete");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
 
     public static String sortCLScript(SclScript script) {
         StringBuilder sb = new StringBuilder();
@@ -27,7 +37,7 @@ public class Main {
         int count = 0;
         for (SclField field : script.getFields()) {
             count++;
-            sb.append("/FIELD=(").append(field.getName()).append(", TYPE=").append("ASCII").append(", POSITION=").append(count).append(", SEPARATOR=\"\\t\")\n");
+            sb.append("/FIELD=(").append(field.getName()).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", SEPARATOR=\"\\t\")\n");
         }
         sb.append("/STREAM\n");
         sb.append("/OUTFILE=\"").append(script.getTable()).append(";DSN=").append(script.getDSN()).append(";\"\n");
@@ -46,9 +56,12 @@ public class Main {
         return sb.toString();
     }
 
-    public static void clearOut(AtomicReference<Integer> i) throws IOException {
+    public static void clearOut(AtomicReference<Integer> i, Logger LOG) throws IOException {
         for (SclScript script : scripts.get().values()) {
             script.getStdin().close();
+            if (script.getProcess().exitValue() > 0) {
+                LOG.error(String.format("SortCL script for table %s exited with error code: %d. Check .cserrlog for details.", script.getTable(), script.getProcess().exitValue()));
+            }
         }
         scripts.set(new HashMap<>());
         i.set(0);
@@ -71,7 +84,6 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
         ArrayList<String> columns = new ArrayList<>();
-        Logger LOG = LoggerFactory.getLogger(Main.class);
         LOG.info("Launching Debezium embedded engine");
         Properties props;
         try (InputStream input = new FileInputStream("config.properties")) {
@@ -231,18 +243,30 @@ public class Main {
                     }
                 })
                 .build()) {
-            ScheduledThreadPoolExecutor dispenser = new ScheduledThreadPoolExecutor(1);
+            // Try to dispense pending ODBC output at certain intervals - causes problems
+          /* ScheduledThreadPoolExecutor dispenser = new ScheduledThreadPoolExecutor(1);
             dispenser.scheduleAtFixedRate(() -> {
                 try {
-                    clearOut(i);
+                    clearOut(i, LOG);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }, 0, Long.parseLong(props.getProperty("secondsToClearout")), TimeUnit.SECONDS);
-
+*/
             ExecutorService executor = Executors.newSingleThreadExecutor();
             executor.execute(engine);
-
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                LOG.info("Requesting embedded engine to shut down");
+                try {
+                    engine.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }));
+            // the submitted task keeps running, only no more new ones can be added
+            executor.shutdown();
+            awaitTermination(executor);
+            LOG.info("Engine terminated");
         }
     }
 }
