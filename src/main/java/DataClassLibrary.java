@@ -14,7 +14,7 @@ import java.util.Map;
 public class DataClassLibrary {
     Map<Map<String, String>, DataMatcher> dataMatcherMap = new HashMap<>();
 
-    DataClassLibrary(String filePath) {
+    DataClassLibrary(String filePath, Map<String, String> rules) {
         try {
             File dataClassLibraryFile = new File(filePath);
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
@@ -28,7 +28,12 @@ public class DataClassLibrary {
                     Element eElement = (Element) nNode;
                     String[] defaultRule;
                     try {
-                        defaultRule = eElement.getElementsByTagName("defaultRule").item(0).getNodeValue().split("#");
+                        defaultRule = eElement.getChildNodes().item(0).getNextSibling().getAttributes().getNamedItem("href").getNodeValue().split("#");
+                        if (rules.get(defaultRule[1]) != null) {
+                            defaultRule[1] = rules.get(defaultRule[1]);
+                        } else { // Default
+                            defaultRule[1] = "enc_fp_aes256_alphanum";
+                        }
                     } catch (NullPointerException e) {
                         defaultRule = new String[]{"#", "enc_fp_aes256_alphanum"};
                     }

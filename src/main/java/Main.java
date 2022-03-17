@@ -119,7 +119,8 @@ public class Main {
             props.setProperty("table.exclude.list", ".*_masked");
             props.setProperty("secondsToClearout", "60");
         }
-        DataClassLibrary dataClassLibrary = new DataClassLibrary("iriLibrary.dataclass");
+        RulesLibrary rulesLibrary = new RulesLibrary("iriLibrary.rules");
+        DataClassLibrary dataClassLibrary = new DataClassLibrary("iriLibrary.dataclass", rulesLibrary.getRules());
         //  RulesLibrary rulesLibrary = new RulesLibrary("iriLibrary.rules");
 
         AtomicReference<Integer> i = new AtomicReference<>();

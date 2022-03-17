@@ -1,12 +1,22 @@
 <?xml version="1.0" encoding="ASCII"?>
 <dataclass:DataClassLibrary xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:dataclass="http://dataclass/1.0" xmlns:ddf="http://www.iri.com/lang/ddf/Ddf" xmlns:flow="http://flow/1.0" xmlns:scl="http://www.iri.com/lang/scl/Scl">
+  <dataClasses xsi:type="dataclass:DataClass" name="FIRST_NAME" description="Class for first names" nameMatcher="FIRST_NAME">
+    <defaultRule href="iriLibrary.rules#FieldPseudonymRule"/>
+    <matchers type="FILE" details="C:/Users/dakoz/Desktop/Workbench_10_08/sets/names/names_first.set"/>
+  </dataClasses>
+  <dataClasses xsi:type="dataclass:DataClass" name="LAST_NAME" description="Class for last names" nameMatcher="LAST_NAME">
+    <defaultRule href="iriLibrary.rules#FieldPseudonymRule"/>
+    <matchers type="FILE" details="C:/Users/dakoz/Desktop/Workbench_10_08/sets/names/names_last.set"/>
+  </dataClasses>
   <dataClasses xsi:type="dataclass:DataClass" name="EMAIL" description="Class for email" nameMatcher="EMAIL">
+    <defaultRule href="iriLibrary.rules#FieldEncodingRule"/>
     <matchers details="\b[\w._%+-]+@[\w.-]+\.[A-Za-z]{2,4}\b"/>
   </dataClasses>
   <dataClasses xsi:type="dataclass:DataClass" name="POSTAL_CODE_US" description="Class for US Zip code" nameMatcher="POSTAL_CODE_US">
     <matchers details="\b\d{5}(?:-\d{4})?\b"/>
   </dataClasses>
   <dataClasses xsi:type="dataclass:DataClass" name="PIN_US" description="Class for US Social Security Number" nameMatcher="PIN_US">
+    <defaultRule href="iriLibrary.rules#FieldBlurRule"/>
     <matchers details="\b(\d{3}[-]?\d{2}[-]?\d{4})\b"/>
   </dataClasses>
   <dataClasses xsi:type="dataclass:DataClass" name="TADIG-CODE" description="" nameMatcher="">
@@ -71933,16 +71943,30 @@
   <dataClassMap source="//@dataInfos.1/@fields.0" dataClass="FIRST_NAME" matching="name">
     <rule href="iriLibrary.rules#FieldPseudonymRule"/>
   </dataClassMap>
-  <dataClassMap source="//@dataInfos.1/@fields.1" dataClass="LAST_NAME" matching="name"/>
-  <dataClassMap source="//@dataInfos.1/@fields.4" dataClass="EMAIL" matching="100.0"/>
+  <dataClassMap source="//@dataInfos.1/@fields.1" dataClass="LAST_NAME" matching="name">
+    <rule href="iriLibrary.rules#FieldPseudonymRule"/>
+  </dataClassMap>
+  <dataClassMap source="//@dataInfos.1/@fields.4" dataClass="EMAIL" matching="100.0">
+    <rule href="iriLibrary.rules#FieldEncodingRule"/>
+  </dataClassMap>
   <dataClassMap source="//@dataInfos.2/@fields.0" dataClass="POSTAL_CODE_US" matching="100.0"/>
   <dataClassMap source="//@dataInfos.3/@fields.0" dataClass="POSTAL_CODE_US" matching="100.0"/>
-  <dataClassMap source="//@dataInfos.10/@fields.4" dataClass="EMAIL" matching="100.0"/>
-  <dataClassMap source="//@dataInfos.12/@fields.3" dataClass="EMAIL" matching="100.0"/>
+  <dataClassMap source="//@dataInfos.10/@fields.4" dataClass="EMAIL" matching="100.0">
+    <rule href="iriLibrary.rules#FieldEncodingRule"/>
+  </dataClassMap>
+  <dataClassMap source="//@dataInfos.12/@fields.3" dataClass="EMAIL" matching="100.0">
+    <rule href="iriLibrary.rules#FieldEncodingRule"/>
+  </dataClassMap>
   <dataClassMap source="//@dataInfos.12/@fields.6" dataClass="POSTAL_CODE_US" matching="100.0"/>
-  <dataClassMap source="//@dataInfos.16/@fields.5" dataClass="EMAIL" matching="100.0"/>
-  <dataClassMap source="//@dataInfos.25/@fields.1" dataClass="PIN_US" matching="100.0"/>
-  <dataClassMap source="//@dataInfos.27/@fields.3" dataClass="EMAIL" matching="100.0"/>
+  <dataClassMap source="//@dataInfos.16/@fields.5" dataClass="EMAIL" matching="100.0">
+    <rule href="iriLibrary.rules#FieldEncodingRule"/>
+  </dataClassMap>
+  <dataClassMap source="//@dataInfos.25/@fields.1" dataClass="PIN_US" matching="100.0">
+    <rule href="iriLibrary.rules#FieldBlurRule"/>
+  </dataClassMap>
+  <dataClassMap source="//@dataInfos.27/@fields.3" dataClass="EMAIL" matching="100.0">
+    <rule href="iriLibrary.rules#FieldEncodingRule"/>
+  </dataClassMap>
   <dataClassMap source="//@dataInfos.27/@fields.6" dataClass="POSTAL_CODE_US" matching="100.0"/>
   <dataClassMap source="//@dataInfos.28/@fields.39" dataClass="POSTAL_CODE_US" matching="100.0"/>
   <dataClassMap source="//@dataInfos.29/@fields.0" dataClass="TADIG-CODE" matching="100.0"/>
