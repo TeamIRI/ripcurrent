@@ -2,11 +2,11 @@
 <dataclass:DataClassLibrary xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:dataclass="http://dataclass/1.0" xmlns:ddf="http://www.iri.com/lang/ddf/Ddf" xmlns:flow="http://flow/1.0" xmlns:scl="http://www.iri.com/lang/scl/Scl">
   <dataClasses xsi:type="dataclass:DataClass" name="FIRST_NAME" description="Class for first names" nameMatcher="FIRST_NAME">
     <defaultRule href="iriLibrary.rules#FieldPseudonymRule"/>
-    <matchers type="FILE" details="C:/Users/dakoz/Desktop/Workbench_10_08/sets/names/names_first.set"/>
+    <matchers type="FILE" details="C:\IRI\workbench2\sets\names\names_first.set"/>
   </dataClasses>
   <dataClasses xsi:type="dataclass:DataClass" name="LAST_NAME" description="Class for last names" nameMatcher="LAST_NAME">
     <defaultRule href="iriLibrary.rules#FieldPseudonymRule"/>
-    <matchers type="FILE" details="C:/Users/dakoz/Desktop/Workbench_10_08/sets/names/names_last.set"/>
+    <matchers type="FILE" details="C:\IRI\workbench2\sets\names\names_last.set"/>
   </dataClasses>
   <dataClasses xsi:type="dataclass:DataClass" name="EMAIL" description="Class for email" nameMatcher="EMAIL">
     <defaultRule href="iriLibrary.rules#FieldEncodingRule"/>
