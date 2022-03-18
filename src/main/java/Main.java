@@ -49,7 +49,7 @@ public class Main {
             //    if (count > 1) {
             if (field.expressionApplied) {
                 if (field.getExpression().contains(".set")) { // Assuming the set file ends with extension .set - maybe think of a better conditional test later.
-                    sb.append("/FIELD=(ALTERED_").append(field.getName()).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", SEPARATOR=\"\\t\", ").append("SET=\"").append(field.getExpression()).append("\"").append(")\n");
+                    sb.append("/FIELD=(ALTERED_").append(field.getName()).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", SEPARATOR=\"\\t\", ").append("SET=").append(field.getExpression()).append(")\n");
                 } else {
                     sb.append("/FIELD=(ALTERED_").append(field.getName()).append("=").append(field.getExpression()).append("(").append(field.getName()).append("), TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", SEPARATOR=\"\\t\")\n");
                 }
