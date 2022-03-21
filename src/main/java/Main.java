@@ -2,7 +2,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import io.debezium.config.Configuration;
 import io.debezium.engine.ChangeEvent;
 import io.debezium.engine.DebeziumEngine;
 import io.debezium.engine.format.Json;
@@ -61,17 +60,6 @@ public class Main {
         return sb.toString();
     }
 
-    public static void clearOut(AtomicReference<Integer> i, Logger LOG) throws IOException {
-        for (SclScript script : scripts.get().values()) {
-            script.getStdin().close();
-            if (script.getProcess().exitValue() > 0) {
-                LOG.error(String.format("SortCL script for table %s exited with error code: %d. Check .cserrlog for details.", script.getTable(), script.getProcess().exitValue()));
-            }
-        }
-        scripts.set(new HashMap<>());
-        i.set(0);
-    }
-
     public static void classify(Set<Map.Entry<String, JsonElement>> values, DataClassLibrary dataClassLibrary, ArrayList<SclField> fields) {
         int count = 0;
         for (Map.Entry<String, JsonElement> value : values) {
@@ -99,35 +87,11 @@ public class Main {
             props.load(input);
 
         } catch (IOException ex) {
-            ex.printStackTrace();
-            Configuration config = Configuration.empty();
-            props = config.asProperties();
-            props.setProperty("name", "engine");
-            props.setProperty("connector.class", "io.debezium.connector.mysql.MySqlConnector");
-            props.setProperty("offset.storage", "org.apache.kafka.connect.storage.FileOffsetBackingStore");
-            props.setProperty("offset.storage.file.filename", "offsets.dat");
-            props.setProperty("offset.flush.interval.ms", "1000");
-            /* begin connector properties */
-            props.setProperty("database.hostname", "localhost");
-            props.setProperty("database.port", "3306");
-            props.setProperty("database.user", "devonk");
-            if (System.getenv("DBPASS") == null) {
-                throw new Exception("Set environment variable for DBPASS with the password to the database.");
-            }
-            props.setProperty("database.password", System.getenv("DBPASS"));
-            props.setProperty("database.server.id", "85744");
-            props.setProperty("database.server.name", "test");
-            props.setProperty("database.history",
-                    "io.debezium.relational.history.FileDatabaseHistory");
-            props.setProperty("database.history.file.filename",
-                    "dbhistory.dat");
-            props.setProperty("table.exclude.list", ".*_masked");
-            props.setProperty("secondsToClearout", "60");
+            LOG.error("Unable to load 'config.properties', needed for configuration and database connection details. Exiting...");
+            return;
         }
         RulesLibrary rulesLibrary = new RulesLibrary("iriLibrary.rules");
         DataClassLibrary dataClassLibrary = new DataClassLibrary("iriLibrary.dataclass", rulesLibrary.getRules());
-        //  RulesLibrary rulesLibrary = new RulesLibrary("iriLibrary.rules");
-
         AtomicReference<Integer> i = new AtomicReference<>();
         i.set(0);
 
@@ -142,7 +106,7 @@ public class Main {
                             if (jsonObject != null && jsonObject.get("payload") != null && jsonObject.get("payload").getAsJsonObject() != null && jsonObject.get("payload").getAsJsonObject().get("op") != null) {
                                 operation = jsonObject.get("payload").getAsJsonObject().get("op").getAsString();
                             }
-                            if (operation.equals("c")) {
+                            if (operation.equals("c")) { // Rows added
                                 JsonObject Jobject_ = jsonObject.get("payload").getAsJsonObject().get("after").getAsJsonObject();
                                 columns.addAll(Jobject_.keySet());
                                 int count = 0;
@@ -154,7 +118,7 @@ public class Main {
                                                 .map(SclField::getName)
                                                 .collect(Collectors.toList()).equals(columns)) {
                                             count++;
-                                            if (count == scripts.get().size()) {
+                                            if (count == scripts.get().size()) { // If the table is new, make a new script.
                                                 makeNewScript = true;
                                             }
                                         } else {
@@ -173,9 +137,9 @@ public class Main {
                                     }
                                     assert tempFile != null;
                                     tempFile.deleteOnExit();
-                                    try {
+                                    try { // Generating the SortCL script dynamically.
                                         FileWriter myWriter = new FileWriter(tempFile);
-                                        scripts.get().put(i.get().toString(), new SclScript(jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString(), "localmysql", columns));
+                                        scripts.get().put(i.get().toString(), new SclScript(jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString(), props.getProperty("DSN"), columns));
                                         JsonArray fieldsArray = jsonObject.get("schema").getAsJsonObject().get("fields").getAsJsonArray().get(0).getAsJsonObject().get("fields").getAsJsonArray();
                                         int loopTrack = 0;
                                         for (JsonElement object : fieldsArray) {
@@ -210,6 +174,7 @@ public class Main {
                                     try {
                                         scripts.get().get(i.toString()).setProcess(new ProcessBuilder("sortcl", "/SPEC=" + tempFile.getAbsolutePath()).redirectErrorStream(true).start());
                                     } catch (IOException e) {
+                                        LOG.error("An error occurred when starting sortcl process.");
                                         e.printStackTrace();
                                     }
                                 }
@@ -226,6 +191,7 @@ public class Main {
                                             scripts.get().get(Integer.toString(count)).getStdin().write("\t");
                                         }
                                     } catch (IOException e) {
+                                        LOG.error("Attempted to write to closed standard input of an existing sortcl process.");
                                         e.printStackTrace();
                                     }
 
@@ -234,7 +200,6 @@ public class Main {
                                 try {
                                     scripts.get().get(Integer.toString(count)).getStdin().newLine();
                                     scripts.get().get(Integer.toString(count)).getStdin().flush();
-                                    //script.get().getStdin().close();
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                 }
@@ -249,16 +214,6 @@ public class Main {
                     }
                 })
                 .build()) {
-            // Try to dispense pending ODBC output at certain intervals - causes problems
-          /* ScheduledThreadPoolExecutor dispenser = new ScheduledThreadPoolExecutor(1);
-            dispenser.scheduleAtFixedRate(() -> {
-                try {
-                    clearOut(i, LOG);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }, 0, Long.parseLong(props.getProperty("secondsToClearout")), TimeUnit.SECONDS);
-*/
             ExecutorService executor = Executors.newSingleThreadExecutor();
             executor.execute(engine);
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -266,6 +221,7 @@ public class Main {
                 try {
                     engine.close();
                 } catch (IOException e) {
+                    LOG.error("Unable to shutdown Debezium engine properly.");
                     e.printStackTrace();
                 }
             }));
