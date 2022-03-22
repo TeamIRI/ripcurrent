@@ -30,7 +30,7 @@ public class RulesLibrary {
                         Node nNode2 = matchersList.item(temp2);
                         switch (nNode2.getAttributes().getNamedItem("fieldRulePropertyType").getNodeValue()) {
                             case "EXPRESSION":
-                                rules.put(((Element) nNode).getAttribute("name"), nNode2.getAttributes().getNamedItem("value").getNodeValue().replace("(${FIELDNAME})", ""));
+                                rules.put(((Element) nNode).getAttribute("name"), nNode2.getAttributes().getNamedItem("value").getNodeValue());
                                 break;
                             case "SET":
                                 rules.put(((Element) nNode).getAttribute("name"), nNode2.getAttributes().getNamedItem("value").getNodeValue().replace("&quot;", "").replace(" SELECT=ANY", ""));
