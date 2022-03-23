@@ -17,6 +17,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class Main {
+    final static String DATA_CLASS_LIBRARY_PROPERTY_NAME = "dataClassLibraryPath";
+    final static String RULES_LIBRARY_PROPERTY_NAME = "rulesLibraryPath";
+    final static String TARGET_NAME_POSTFIX_PROPERTY_NAME = "targetNamePostfix";
+
     static AtomicReference<HashMap<String, SclScript>> scripts = new AtomicReference<>();
     private static final Logger LOG = LoggerFactory.getLogger(Main.class);
 
@@ -90,8 +94,8 @@ public class Main {
             LOG.error("Unable to load 'config.properties', needed for configuration and database connection details. Exiting...");
             return;
         }
-        RulesLibrary rulesLibrary = new RulesLibrary("iriLibrary.rules");
-        DataClassLibrary dataClassLibrary = new DataClassLibrary("iriLibrary.dataclass", rulesLibrary.getRules());
+        RulesLibrary rulesLibrary = new RulesLibrary(props.getProperty(RULES_LIBRARY_PROPERTY_NAME));
+        DataClassLibrary dataClassLibrary = new DataClassLibrary(props.getProperty(DATA_CLASS_LIBRARY_PROPERTY_NAME), rulesLibrary.getRules());
         AtomicReference<Integer> i = new AtomicReference<>();
         i.set(0);
 
@@ -114,7 +118,7 @@ public class Main {
                                 if (scripts.get() != null && scripts.get().values().size() > 0) {
                                     for (SclScript script : scripts.get().values()) {
 
-                                        if (!script.getTable().equals(jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString() + "_masked") || !script.getFields().stream()
+                                        if (!script.getTable().equals(jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString() + props.getProperty(TARGET_NAME_POSTFIX_PROPERTY_NAME)) || !script.getFields().stream()
                                                 .map(SclField::getName)
                                                 .collect(Collectors.toList()).equals(columns)) {
                                             count++;
