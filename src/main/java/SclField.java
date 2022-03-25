@@ -3,11 +3,13 @@ public class SclField {
     Boolean expressionApplied;
     String expression;
     String dataType;
+    Integer precision;
 
     SclField(String name) {
         this.name = name;
         this.expressionApplied = false;
         this.dataType = "ASCII";
+        this.precision = -1;
     }
 
     public String getName() {
@@ -40,5 +42,13 @@ public class SclField {
 
     public void setDataType(String dataType) {
         this.dataType = dataType;
+    }
+
+    public Integer getPrecision() {
+        return precision;
+    }
+
+    public void setPrecision(Integer precision) {
+        this.precision = precision;
     }
 }

@@ -1,7 +1,4 @@
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
 import io.debezium.engine.ChangeEvent;
 import io.debezium.engine.DebeziumEngine;
 import io.debezium.engine.format.Json;
@@ -27,7 +24,7 @@ public class Main {
     private static void awaitTermination(ExecutorService executor) {
         try {
             while (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
-                LOG.info("Waiting another 10 seconds for the embedded engine to complete");
+                LOG.debug("Debezium embedded engine running...");
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -40,7 +37,7 @@ public class Main {
         int count = 0;
         for (SclField field : script.getFields()) {
             count++;
-            sb.append("/FIELD=(").append(field.getName()).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", SEPARATOR=\"\\t\")\n");
+            sb.append("/FIELD=(").append(field.getName()).append(", TYPE=").append("ASCII").append(", POSITION=").append(count).append(", SEPARATOR=\"\\t\"").append(")\n");
         }
         sb.append("/STREAM\n");
         sb.append("/OUTFILE=\"").append(script.getTable()).append(";DSN=").append(script.getDSN()).append(";\"\n");
@@ -52,14 +49,17 @@ public class Main {
             //    if (count > 1) {
             if (field.expressionApplied) {
                 if (field.getExpression().contains(".set")) { // Assuming the set file ends with extension .set - maybe think of a better conditional test later.
-                    sb.append("/FIELD=(ALTERED_").append(field.getName()).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", SEPARATOR=\"\\t\", ").append("SET=").append(field.getExpression()).append(")\n");
+                    sb.append("/FIELD=(ALTERED_").append(field.getName()).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", SEPARATOR=\"\\t\", ").append("SET=").append(field.getExpression());
                 } else {
-                    sb.append("/FIELD=(ALTERED_").append(field.getName()).append("=").append(field.getExpression().replace("${FIELDNAME}", field.getName())).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", SEPARATOR=\"\\t\")\n");
+                    sb.append("/FIELD=(ALTERED_").append(field.getName()).append("=").append(field.getExpression().replace("${FIELDNAME}", field.getName())).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", SEPARATOR=\"\\t\"");
                 }
-
             } else {
-                sb.append("/FIELD=(").append(field.getName()).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", SEPARATOR=\"\\t\")\n");
+                sb.append("/FIELD=(").append(field.getName()).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", SEPARATOR=\"\\t\"");
             }
+            if (field.getPrecision() != -1) {
+                sb.append(", PRECISION=").append(field.getPrecision());
+            }
+            sb.append(")\n");
         }
         return sb.toString();
     }
@@ -115,6 +115,37 @@ public class Main {
                                 columns.addAll(Jobject_.keySet());
                                 int count = 0;
                                 boolean makeNewScript = Boolean.FALSE;
+                                JsonArray fieldsArray = jsonObject.get("schema").getAsJsonObject().get("fields").getAsJsonArray().get(0).getAsJsonObject().get("fields").getAsJsonArray();
+                                int loopTrack = 0;
+                                List<Integer> dateIndices = new ArrayList<>();
+                                for (JsonElement object : fieldsArray) {
+                                    String type = object.getAsJsonObject().get("type").getAsString();
+                                    JsonElement name = object.getAsJsonObject().get("name");
+                                    if (type == null) {
+                                        loopTrack++;
+                                        continue;
+                                    }
+                                    switch (type) {
+                                        case "int32":
+                                            if (name.getAsString().equals("io.debezium.time.Date")) { // This is the name for a date, at least with the MySQL connector. Actual Integers seem to have a null name.
+                                                // Need to look at Times and DateTimes as well
+                                                dateIndices.add(loopTrack);
+                                            }
+                                            break;
+                                        default:
+
+                                    }
+                                    loopTrack++;
+                                }
+                                loopTrack = 0;
+                                // Dates are coming in through the Debezium connector as numeric values, this is looking for them and converting them to their date representation.
+                                for (Map.Entry<String, JsonElement> jj : Jobject_.entrySet()) {
+                                    if (dateIndices.contains(loopTrack)) {
+                                        jj.setValue(new JsonPrimitive(DateTimeConversionUtil.integerToDate(jj.getValue().getAsInt())));
+                                    }
+                                    loopTrack++;
+                                }
+
                                 if (scripts.get() != null && scripts.get().values().size() > 0) {
                                     for (SclScript script : scripts.get().values()) {
 
@@ -144,8 +175,8 @@ public class Main {
                                     try { // Generating the SortCL script dynamically.
                                         FileWriter myWriter = new FileWriter(tempFile);
                                         scripts.get().put(i.get().toString(), new SclScript(jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString(), props.getProperty("DSN"), columns));
-                                        JsonArray fieldsArray = jsonObject.get("schema").getAsJsonObject().get("fields").getAsJsonArray().get(0).getAsJsonObject().get("fields").getAsJsonArray();
-                                        int loopTrack = 0;
+                                        // fieldsArray = jsonObject.get("schema").getAsJsonObject().get("fields").getAsJsonArray().get(0).getAsJsonObject().get("fields").getAsJsonArray();
+                                        loopTrack = 0;
                                         for (JsonElement object : fieldsArray) {
                                             String type = object.getAsJsonObject().get("type").getAsString();
                                             JsonElement name = object.getAsJsonObject().get("name");
@@ -156,7 +187,8 @@ public class Main {
                                             switch (type) {
                                                 case "int32":
                                                     if (name == null) {
-                                                        scripts.get().get(i.get().toString()).getFields().get(loopTrack).setDataType("WHOLE_NUMBER");
+                                                        scripts.get().get(i.get().toString()).getFields().get(loopTrack).setDataType("NUMERIC");
+                                                        scripts.get().get(i.get().toString()).getFields().get(loopTrack).setPrecision(0);
                                                     } else {
                                                         scripts.get().get(i.get().toString()).getFields().get(loopTrack).setDataType("ISO_DATE");
                                                     }
@@ -182,8 +214,6 @@ public class Main {
                                         e.printStackTrace();
                                     }
                                 }
-
-
                                 int ct = 0;
                                 for (Map.Entry<String, JsonElement> jj : Jobject_.entrySet()) {
                                     ct++;
@@ -204,8 +234,9 @@ public class Main {
                                 try {
                                     scripts.get().get(Integer.toString(count)).getStdin().newLine();
                                     scripts.get().get(Integer.toString(count)).getStdin().flush();
-                                } catch (IOException e) {
-                                    e.printStackTrace();
+                                } catch (IOException e) { // Pipe is closed; remove the broken script from script map.
+                                    // This could happen if there was an error outputting to the target table.
+                                    scripts.get().remove(Integer.toString(count));
                                 }
                                 if (makeNewScript) {
                                     i.set(i.get() + 1);
