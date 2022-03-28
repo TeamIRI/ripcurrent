@@ -123,6 +123,8 @@ public class Main {
                                 m.setFieldsArray(fieldsArray);
                                 int loopTrack = 0;
                                 List<Integer> dateIndices = new ArrayList<>();
+                                List<Integer> dateTimeIndices = new ArrayList<>();
+                                List<Integer> timeIndices = new ArrayList<>();
                                 for (JsonElement object : fieldsArray) {
                                     String type = object.getAsJsonObject().get("type").getAsString();
                                     JsonElement name = object.getAsJsonObject().get("name");
@@ -133,8 +135,14 @@ public class Main {
                                     switch (type) {
                                         case "int32":
                                             if (name != null && name.getAsString().equals("io.debezium.time.Date")) { // This is the name for a date, at least with the MySQL connector. Actual Integers seem to have a null name.
-                                                // Need to look at Times and DateTimes as well
                                                 dateIndices.add(loopTrack);
+                                            }
+                                            break;
+                                        case "int64":
+                                            if (name != null && name.getAsString().equals("io.debezium.time.MicroTime")) { // This is the name for a time, at least with the MySQL connector. Actual Integers seem to have a null name.
+                                                timeIndices.add(loopTrack);
+                                            } else if (name != null && name.getAsString().equals("io.debezium.time.Timestamp")) { // This is the name for a timestamp, at least with the MySQL connector. Actual Integers seem to have a null name.
+                                                dateTimeIndices.add(loopTrack);
                                             }
                                             break;
                                         default:
@@ -147,6 +155,10 @@ public class Main {
                                 for (Map.Entry<String, JsonElement> jj : Jobject_.entrySet()) {
                                     if (dateIndices.contains(loopTrack)) {
                                         jj.setValue(new JsonPrimitive(DateTimeConversionUtil.integerToDate(jj.getValue().getAsInt())));
+                                    } else if (dateTimeIndices.contains(loopTrack)) {
+                                        jj.setValue(new JsonPrimitive(DateTimeConversionUtil.numberToDateTime(jj.getValue().getAsLong())));
+                                    } else if (timeIndices.contains(loopTrack)) {
+                                        jj.setValue(new JsonPrimitive(DateTimeConversionUtil.numberToTime(jj.getValue().getAsLong())));
                                     }
                                     loopTrack++;
                                 }

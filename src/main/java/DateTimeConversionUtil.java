@@ -1,4 +1,8 @@
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneOffset;
+import java.util.concurrent.TimeUnit;
 
 public class DateTimeConversionUtil {
 
@@ -9,5 +13,17 @@ public class DateTimeConversionUtil {
     public static String integerToDate(Integer number) {
         LocalDate date = LocalDate.ofEpochDay(number);
         return date.toString();
+    }
+
+    public static String numberToTime(long number) { // Convert microseconds of day to time.
+        LocalTime time = LocalTime.ofNanoOfDay(number * 1000);
+        return time.toString();
+    }
+
+    public static String numberToDateTime(long number) { // Convert milliseconds since 1970 to datetime.
+        long secondsSince1970 = TimeUnit.MILLISECONDS.toSeconds(number);
+        int remainingMicros = 0;
+        LocalDateTime dateTime = LocalDateTime.ofEpochSecond(secondsSince1970, remainingMicros, ZoneOffset.UTC);
+        return dateTime.toString();
     }
 }
