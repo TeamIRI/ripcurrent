@@ -7,13 +7,15 @@ import java.util.ArrayList;
 public class SclScript {
     String table;
     String DSN;
+    String operation;
     ArrayList<SclField> fields = new ArrayList<>();
     Process process;
     BufferedWriter stdin;
     BufferedReader stderr;
     BufferedReader stdout;
 
-    SclScript(String table, String DSN, ArrayList<String> fields) {
+    SclScript(String table, String DSN, ArrayList<String> fields, String operation) {
+        this.operation = operation;
         this.table = table + "_masked";
         this.DSN = DSN;
         for (String fieldName : fields) {
@@ -47,6 +49,14 @@ public class SclScript {
 
     public Process getProcess() {
         return process;
+    }
+
+    public String getOperation() {
+        return operation;
+    }
+
+    public void setOperation(String operation) {
+        this.operation = operation;
     }
 
     public void setProcess(Process process) {

@@ -26,7 +26,7 @@ public class Main {
     Properties props;
     ArrayList<String> columns = new ArrayList<>();
 
-    public static void makeANewScript(Main m) {
+    public static void makeANewScript(Main m, String operation) {
         int loopTrack = 0;
         File tempFile = null;
         try {
@@ -39,7 +39,7 @@ public class Main {
         tempFile.deleteOnExit();
         try { // Generating the SortCL script dynamically.
             FileWriter myWriter = new FileWriter(tempFile);
-            scripts.get().put(m.getI().get().toString(), new SclScript(m.getJsonObject().get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString(), m.getProps().getProperty("DSN"), m.getColumns()));
+            scripts.get().put(m.getI().get().toString(), new SclScript(m.getJsonObject().get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString(), m.getProps().getProperty("DSN"), m.getColumns(), operation));
             for (JsonElement object : m.getFieldsArray()) {
                 String type = object.getAsJsonObject().get("type").getAsString();
                 JsonElement name = object.getAsJsonObject().get("name");
@@ -113,7 +113,7 @@ public class Main {
                             if (jsonObject != null && jsonObject.get("payload") != null && jsonObject.get("payload").getAsJsonObject() != null && jsonObject.get("payload").getAsJsonObject().get("op") != null) {
                                 operation = jsonObject.get("payload").getAsJsonObject().get("op").getAsString();
                             }
-                            if (operation.equals("c")) { // Rows added
+                            if (operation.equals("c") || operation.equals("u")) { // Rows added or updated
                                 JsonObject Jobject_ = jsonObject.get("payload").getAsJsonObject().get("after").getAsJsonObject();
                                 m.setAfterJsonPayload(Jobject_);
                                 m.getColumns().addAll(Jobject_.keySet());
@@ -166,7 +166,7 @@ public class Main {
                                 if (scripts.get() != null && scripts.get().values().size() > 0) {
                                     for (SclScript script : scripts.get().values()) {
 
-                                        if (!script.getTable().equals(jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString() + props.getProperty(TARGET_NAME_POSTFIX_PROPERTY_NAME)) || !script.getFields().stream()
+                                        if (!script.getOperation().equals(operation) || !script.getTable().equals(jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString() + props.getProperty(TARGET_NAME_POSTFIX_PROPERTY_NAME)) || !script.getFields().stream()
                                                 .map(SclField::getName)
                                                 .collect(Collectors.toList()).equals(m.getColumns())) {
                                             count++;
@@ -181,7 +181,7 @@ public class Main {
                                     makeNewScript = true;
                                 }
                                 if (makeNewScript) {
-                                    makeANewScript(m);
+                                    makeANewScript(m, operation);
                                 }
                                 int ct = 0;
                                 for (Map.Entry<String, JsonElement> jj : Jobject_.entrySet()) {
@@ -196,7 +196,7 @@ public class Main {
                                     } catch (IOException e) {
                                         // This could happen if there was an error outputting to the target table.
                                         scripts.get().remove(Integer.toString(count));
-                                        makeANewScript(m);
+                                        makeANewScript(m, operation);
                                         makeNewScript = true;
                                         count = 0;
                                         if (scripts.get() != null && scripts.get().values().size() > 0) {
@@ -345,7 +345,11 @@ public class Main {
         sb.append("/STREAM\n");
         sb.append("/OUTFILE=\"").append(script.getTable()).append(";DSN=").append(script.getDSN()).append(";\"\n");
         sb.append("/PROCESS=ODBC\n");
-        // sb.append("/UPDATE=(" + script.getFields().get(0) + ")\n");
+        if (script.getOperation().equals("u")) { // Assuming that the first column is a primary key - I don't see any information from Debezium about what columns are keys.
+            sb.append("/UPDATE=(");
+            sb.append(script.getFields().get(0).getName());
+            sb.append(")\n");
+        }
         count = 0;
         for (SclField field : script.getFields()) {
             count++;
