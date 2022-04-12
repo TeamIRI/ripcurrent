@@ -106,7 +106,7 @@ public class Main {
         LOG.info("Launching Debezium embedded engine");
         Properties props;
         Path riptideConfigPath = java.nio.file.Paths.get(riptideHome, "conf", "config.properties");
-        try (InputStream input = new FileInputStream(riptideConfigPath.toString())) {
+        try (InputStream input = new FileInputStream(riptideConfigPath.toAbsolutePath().toString())) {
 
             props = new Properties();
 
