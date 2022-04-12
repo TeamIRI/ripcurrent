@@ -1,0 +1,36 @@
+IRI Virtual Shrinkwrap Product License Agreement
+
+All programs and files provided by your CoSort agent are the property of Innovative Routines International (IRI),
+Incorporated, also known as CoSort/IRI, Inc. or The CoSort Company. This includes without limitation SortCL and its
+related metadata conversion tools, drop-in sort replacement verbs and and callable library functions.
+
+All rights and title to the CoSort software and manuals, including without limitation: data, programs, archives and
+examples remain fully vested with IRI. IRI owns all intellectual property, trademark and copyrights thereto in the
+United States and international jurisdictions. However, you own the programs and job scripts that you write that call
+or use CoSort libraries or executables.
+
+In addition, IRI retains any applicable patent rights, trade and service marks, goodwill, and the confidential and
+proprietary information related to the evaluation and/or use of its software. Evaluation licenses are subject to
+specific confidentiality restrictions; see your trial and non-disclosure agreement (NDA).
+
+Licenses for the use of CoSort software are registered, copy-protected and periodically reviewed to assure the full
+compliance with the terms of applicable agreements. CoSort library routines and runtime modules, which are designed
+for integration into third party applications, may NOT be copied or disseminated without a distribution (royalty)
+agreement with IRI.
+
+Any unauthorized duplication and/or distribution of any IRI program(s), whether linked or used as a separate utility,
+violates Title 17, Section 506 of United States Code. Criminal violations may result in imprisonment of up to one year
+and fines of up to $500,000. Civil fines are more severe. CoSort is also protected by international treaties that
+proscribe violations and impose penalties.
+
+Your duty to protect IRI copyrights survives the term of your license agreement with IRI and may not be delegated or
+assigned without the prior written consent of IRI. Any attempt to assign or delegate without IRI consent is void.
+
+For more information concerning CoSort copyrights, please contact:
+
+	Innovative Routines International, Inc.
+	2194 Highway A1A, Suite 303
+	Melbourne, Florida 32937-4932
+	USA Telephone: 1.321.777.8889, ext 238
+	USA Facsimile: 1.321.777.8886
+	http://www.iri.com

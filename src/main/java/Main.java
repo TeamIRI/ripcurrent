@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2022 Innovative Routines International (IRI), Inc.
+ *
+ * Description: Main class for Riptide application. This application monitors for database changes using Debezium embedded engine connectors,
+ *  and will dynamically generated and run sortcl scripts to transport data to target tables, with any transformations
+ *  consistently applied based on rules mapped to data classes.
+ *
+ * Contributors:
+ *     devonk
+ */
 import com.google.gson.*;
 import io.debezium.engine.ChangeEvent;
 import io.debezium.engine.DebeziumEngine;
@@ -6,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -79,9 +90,23 @@ public class Main {
     }
 
     public static void main(String[] args) throws Exception {
+        String riptideHome;
+        try {
+            riptideHome = System.getenv("RIPTIDE_HOME");
+            if (riptideHome == null) {
+                LOG.error("Could not detect environment variable value for RIPTIDE_HOME. Please set this environment variable to" +
+                        " the root of the Riptide distribution folder.");
+                return;
+            }
+        } catch (NullPointerException | SecurityException e) {
+            LOG.error("Could not detect environment variable value for RIPTIDE_HOME. Please set this environment variable to" +
+                    " the root of the Riptide distribution folder.");
+            return;
+        }
         LOG.info("Launching Debezium embedded engine");
         Properties props;
-        try (InputStream input = new FileInputStream("config.properties")) {
+        Path riptideConfigPath = java.nio.file.Paths.get(riptideHome, "conf", "config.properties");
+        try (InputStream input = new FileInputStream(riptideConfigPath.toString())) {
 
             props = new Properties();
 
@@ -89,8 +114,18 @@ public class Main {
             props.load(input);
 
         } catch (IOException ex) {
-            LOG.error("Unable to load 'config.properties', needed for configuration and database connection details. Exiting...");
+            LOG.error("Unable to load 'config.properties' from '{}'; needed for configuration and database connection details. Exiting...", riptideConfigPath);
             return;
+        }
+        String rulesLibraryPathString;
+        String dataClassLibraryPathString;
+        rulesLibraryPathString = props.getProperty(RULES_LIBRARY_PROPERTY_NAME);
+        dataClassLibraryPathString = props.getProperty(DATA_CLASS_LIBRARY_PROPERTY_NAME);
+        if (rulesLibraryPathString == null) {
+            LOG.warn("{} property not set. Please set this property to the absolute path of an IRI rules library.", RULES_LIBRARY_PROPERTY_NAME);
+        }
+        if (dataClassLibraryPathString == null) {
+            LOG.warn("{} property not set. Please set this property to the absolute path of an IRI data class library.", DATA_CLASS_LIBRARY_PROPERTY_NAME);
         }
 
         RulesLibrary rulesLibrary = new RulesLibrary(props.getProperty(RULES_LIBRARY_PROPERTY_NAME));

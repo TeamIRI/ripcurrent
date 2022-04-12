@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2022 Innovative Routines International (IRI), Inc.
+ *
+ * Description: Match on data using a regular expression pattern.
+ *
+ * Contributors:
+ *     devonk
+ */
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 

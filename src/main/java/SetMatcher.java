@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2022 Innovative Routines International (IRI), Inc.
+ *
+ * Description: Match on data using a set file, or dictionary lookup.
+ *
+ * Contributors:
+ *     devonk
+ */
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;

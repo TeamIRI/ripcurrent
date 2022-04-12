@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2022 Innovative Routines International (IRI), Inc.
+ *
+ * Description: Class to represent a SortCL script, or at least the attributes of a SortCL script pertinent to this application.
+ *
+ * Contributors:
+ *     devonk
+ */
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.InputStreamReader;

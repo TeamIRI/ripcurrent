@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2022 Innovative Routines International (IRI), Inc.
+ *
+ * Description: Read from an existing IRI data class library file.
+ *
+ * Contributors:
+ *     devonk
+ */
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
