@@ -9,7 +9,7 @@ apply plugin: 'java'
 apply plugin: 'application'
 
 
-group 'com.iri.riptide'
+group 'com.iri.ripcurrent'
 mainClassName = 'Main'
 
 repositories {
