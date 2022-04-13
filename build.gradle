@@ -25,7 +25,7 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 distributions {
     main {
-        distributionBaseName = 'riptide'
+        distributionBaseName = 'ripcurrent'
         contents {
             into("conf") {
                 from(projectDir) {
