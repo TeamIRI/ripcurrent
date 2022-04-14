@@ -22,9 +22,9 @@ public class SclScript {
     BufferedReader stderr;
     BufferedReader stdout;
 
-    SclScript(String table, String DSN, ArrayList<String> fields, String operation) {
+    SclScript(String table, String DSN, ArrayList<String> fields, String operation, String postfixTableString) {
         this.operation = operation;
-        this.table = table + "_masked";
+        this.table = table + postfixTableString;
         this.DSN = DSN;
         for (String fieldName : fields) {
             this.fields.add(new SclField(fieldName));

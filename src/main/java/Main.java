@@ -30,6 +30,7 @@ public class Main {
     final static String TARGET_NAME_POSTFIX_PROPERTY_NAME = "targetNamePostfix";
     RulesLibrary rulesLibrary;
     DataClassLibrary dataClassLibrary;
+    String postfixTableName;
     AtomicReference<Integer> i = new AtomicReference<>();
     JsonObject jsonObject;
     JsonObject afterJsonPayload;
@@ -50,7 +51,7 @@ public class Main {
         tempFile.deleteOnExit();
         try { // Generating the SortCL script dynamically.
             FileWriter myWriter = new FileWriter(tempFile);
-            scripts.get().put(m.getI().get().toString(), new SclScript(m.getJsonObject().get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString(), m.getProps().getProperty("DSN"), m.getColumns(), operation));
+            scripts.get().put(m.getI().get().toString(), new SclScript(m.getJsonObject().get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString(), m.getProps().getProperty("DSN"), m.getColumns(), operation, m.getPostfixTableName()));
             for (JsonElement object : m.getFieldsArray()) {
                 String type = object.getAsJsonObject().get("type").getAsString();
                 JsonElement name = object.getAsJsonObject().get("name");
@@ -105,6 +106,7 @@ public class Main {
         }
         LOG.info("Launching Debezium embedded engine");
         Properties props;
+        Main m = new Main();
         Path ripcurrentConfigPath = java.nio.file.Paths.get(ripcurrentHome, "conf", "config.properties");
         try (InputStream input = new FileInputStream(ripcurrentConfigPath.toAbsolutePath().toString())) {
 
@@ -121,6 +123,13 @@ public class Main {
         String dataClassLibraryPathString;
         rulesLibraryPathString = props.getProperty(RULES_LIBRARY_PROPERTY_NAME);
         dataClassLibraryPathString = props.getProperty(DATA_CLASS_LIBRARY_PROPERTY_NAME);
+        String targetNamePostfix = props.getProperty(TARGET_NAME_POSTFIX_PROPERTY_NAME);
+        if (targetNamePostfix == null) {
+            LOG.warn("{} property not set. Target table name will be the same as source table name.", TARGET_NAME_POSTFIX_PROPERTY_NAME);
+            m.setPostfixTableName("");
+        } else {
+            m.setPostfixTableName(targetNamePostfix);
+        }
         if (rulesLibraryPathString == null) {
             LOG.warn("{} property not set. Please set this property to the absolute path of an IRI rules library.", RULES_LIBRARY_PROPERTY_NAME);
         }
@@ -130,7 +139,6 @@ public class Main {
 
         RulesLibrary rulesLibrary = new RulesLibrary(props.getProperty(RULES_LIBRARY_PROPERTY_NAME));
         DataClassLibrary dataClassLibrary = new DataClassLibrary(props.getProperty(DATA_CLASS_LIBRARY_PROPERTY_NAME), rulesLibrary.getRules());
-        Main m = new Main();
         m.setDataClassLibrary(dataClassLibrary);
         m.setRulesLibrary(rulesLibrary);
         m.setProps(props);
@@ -201,7 +209,7 @@ public class Main {
                                 if (scripts.get() != null && scripts.get().values().size() > 0) {
                                     for (SclScript script : scripts.get().values()) {
 
-                                        if (!script.getOperation().equals(operation) || !script.getTable().equals(jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString() + props.getProperty(TARGET_NAME_POSTFIX_PROPERTY_NAME)) || !script.getFields().stream()
+                                        if (!script.getOperation().equals(operation) || !script.getTable().equals(jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString() + m.getPostfixTableName()) || !script.getFields().stream()
                                                 .map(SclField::getName)
                                                 .collect(Collectors.toList()).equals(m.getColumns())) {
                                             count++;
@@ -421,6 +429,14 @@ public class Main {
 
     public void setI(AtomicReference<Integer> i) {
         this.i = i;
+    }
+
+    public String getPostfixTableName() {
+        return postfixTableName;
+    }
+
+    public void setPostfixTableName(String postfixTableName) {
+        this.postfixTableName = postfixTableName;
     }
 }
 
