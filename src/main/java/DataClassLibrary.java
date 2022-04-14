@@ -40,10 +40,10 @@ public class DataClassLibrary {
                         if (rules.get(defaultRule[1]) != null) {
                             defaultRule[1] = rules.get(defaultRule[1]);
                         } else { // Default
-                            defaultRule[1] = "enc_fp_aes256_alphanum(${FIELDNAME})";
+                           continue;
                         }
                     } catch (NullPointerException e) {
-                        defaultRule = new String[]{"#", "enc_fp_aes256_alphanum(${FIELDNAME})"};
+                        continue;
                     }
                     NodeList matchersList = eElement.getElementsByTagName("matchers");
                     for (int temp2 = 0; temp2 < matchersList.getLength(); temp2++) {
