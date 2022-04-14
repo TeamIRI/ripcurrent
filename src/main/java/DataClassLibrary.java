@@ -6,6 +6,8 @@
  * Contributors:
  *     devonk
  */
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -21,7 +23,7 @@ import java.util.Map;
 
 public class DataClassLibrary {
     Map<Map<String, String>, DataMatcher> dataMatcherMap = new HashMap<>();
-
+    private static final Logger LOG = LoggerFactory.getLogger(DataClassLibrary.class);
     DataClassLibrary(String filePath, Map<String, String> rules) {
         try {
             File dataClassLibraryFile = new File(filePath);
@@ -63,6 +65,7 @@ public class DataClassLibrary {
                 }
             }
         } catch (Exception e) {
+            LOG.error("Could not parse data class library '{}'...", filePath);
             e.printStackTrace();
         }
     }

@@ -6,6 +6,8 @@
  * Contributors:
  *     devonk
  */
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -19,7 +21,7 @@ import java.util.Map;
 
 public class RulesLibrary {
     Map<String, String> rules = new HashMap<>();
-
+    private static final Logger LOG = LoggerFactory.getLogger(RulesLibrary.class);
     // name, rule
     RulesLibrary(String filePath) {
         try {
@@ -49,6 +51,7 @@ public class RulesLibrary {
                 }
             }
         } catch (Exception e) {
+            LOG.error("Could not parse rules library '{}'...", filePath);
             e.printStackTrace();
         }
 
