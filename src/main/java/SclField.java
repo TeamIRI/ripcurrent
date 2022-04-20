@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2022 Innovative Routines International (IRI), Inc.
  *
- * Description: Class to represent a field in a SortCL field in a SortCL script, or at least the attributes of a SortCL field pertinent to this application.
+ * Description: Class to represent a SortCL field in a SortCL script, or at least the attributes of a SortCL field pertinent to this application.
  *
  * Contributors:
  *     devonk
