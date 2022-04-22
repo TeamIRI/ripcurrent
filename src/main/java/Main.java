@@ -28,6 +28,8 @@ public class Main {
     final static String DATA_CLASS_LIBRARY_PROPERTY_NAME = "dataClassLibraryPath";
     final static String RULES_LIBRARY_PROPERTY_NAME = "rulesLibraryPath";
     final static String TARGET_NAME_POSTFIX_PROPERTY_NAME = "targetNamePostfix";
+    final static String DATA_TARGET_PROPERTY_NAME = "dataTarget";
+    final static String DATA_TARGET_PROCESS_TYPE_PROPERTY_NAME = "dataTargetProcessType";
     RulesLibrary rulesLibrary;
     DataClassLibrary dataClassLibrary;
     String postfixTableName;
@@ -51,7 +53,14 @@ public class Main {
         tempFile.deleteOnExit();
         try { // Generating the SortCL script dynamically.
             FileWriter myWriter = new FileWriter(tempFile);
-            scripts.get().put(m.getI().get().toString(), new SclScript(m.getJsonObject().get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString(), m.getProps().getProperty("DSN"), m.getColumns(), operation, m.getPostfixTableName()));
+            String dataTarget = m.getProps().getProperty(DATA_TARGET_PROPERTY_NAME);
+            String dataTargetProcessType = m.getProps().getProperty(DATA_TARGET_PROCESS_TYPE_PROPERTY_NAME);
+            String table = m.getJsonObject().get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString();
+            if (dataTarget != null && dataTargetProcessType != null) {
+                scripts.get().put(m.getI().get().toString(), new SclScript(table, m.getColumns(), operation, dataTargetProcessType, dataTarget, m.getPostfixTableName()));
+            } else {
+                scripts.get().put(m.getI().get().toString(), new SclScript(table, m.getProps().getProperty("DSN"), m.getColumns(), operation, m.getPostfixTableName()));
+            }
             for (JsonElement object : m.getFieldsArray()) {
                 String type = object.getAsJsonObject().get("type").getAsString();
                 JsonElement name = object.getAsJsonObject().get("name");
@@ -386,12 +395,18 @@ public class Main {
             sb.append("/FIELD=(").append(field.getName()).append(", TYPE=").append("ASCII").append(", POSITION=").append(count).append(", SEPARATOR=\"\\t\"").append(")\n");
         }
         sb.append("/STREAM\n");
-        sb.append("/OUTFILE=\"").append(script.getTable()).append(";DSN=").append(script.getDSN()).append(";\"\n");
-        sb.append("/PROCESS=ODBC\n");
-        if (script.getOperation().equals("u")) { // Assuming that the first column is a primary key - I don't see any information from Debezium about what columns are keys.
+        if (script.getTarget() != null && script.getTargetProcessType() != null) {
+            sb.append("/OUTFILE=").append(script.getTarget()).append("\n").append("/PROCESS=").append(script.getTargetProcessType()).append("\n");
+        } else {
+            sb.append("/OUTFILE=\"").append(script.getTable()).append(";DSN=").append(script.getDSN()).append(";\"\n");
+            sb.append("/PROCESS=ODBC\n");
+        }
+        if (script.getTargetProcessType().equals("ODBC") && script.getOperation().equals("u")) { // Assuming that the first column is a primary key - I don't see any information from Debezium about what columns are keys.
             sb.append("/UPDATE=(");
             sb.append(script.getFields().get(0).getName());
             sb.append(")\n");
+        } else {
+            sb.append("/APPEND\n");
         }
         count = 0;
         for (SclField field : script.getFields()) {

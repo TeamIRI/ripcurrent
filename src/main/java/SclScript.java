@@ -16,6 +16,8 @@ public class SclScript {
     String table;
     String DSN;
     String operation;
+    String target;
+    String targetProcessType;
     ArrayList<SclField> fields = new ArrayList<>();
     Process process;
     BufferedWriter stdin;
@@ -29,6 +31,33 @@ public class SclScript {
         for (String fieldName : fields) {
             this.fields.add(new SclField(fieldName));
         }
+        this.targetProcessType = "ODBC";
+    }
+
+    SclScript(String table, ArrayList<String> fields, String operation, String targetProcessType, String target, String postfix) {
+        this.operation = operation;
+        this.target = table + "-" + postfix + target;
+        this.table = table + postfix;
+        this.targetProcessType = targetProcessType;
+        for (String fieldName : fields) {
+            this.fields.add(new SclField(fieldName));
+        }
+    }
+
+    public String getTarget() {
+        return target;
+    }
+
+    public void setTarget(String target) {
+        this.target = target;
+    }
+
+    public String getTargetProcessType() {
+        return targetProcessType;
+    }
+
+    public void setTargetProcessType(String targetProcessType) {
+        this.targetProcessType = targetProcessType;
     }
 
     public ArrayList<SclField> getFields() {
