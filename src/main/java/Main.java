@@ -30,6 +30,7 @@ public class Main {
     final static String TARGET_NAME_POSTFIX_PROPERTY_NAME = "targetNamePostfix";
     final static String DATA_TARGET_PROPERTY_NAME = "dataTarget";
     final static String DATA_TARGET_PROCESS_TYPE_PROPERTY_NAME = "dataTargetProcessType";
+    final static String DATA_TARGET_SEPARATOR_PROPERTY_NAME = "dataTargetSeparator";
     RulesLibrary rulesLibrary;
     DataClassLibrary dataClassLibrary;
     String postfixTableName;
@@ -39,6 +40,7 @@ public class Main {
     JsonArray fieldsArray;
     Properties props;
     ArrayList<String> columns = new ArrayList<>();
+    String dataTargetSeparator;
 
     public static void makeANewScript(Main m, String operation) {
         int loopTrack = 0;
@@ -83,7 +85,7 @@ public class Main {
                 loopTrack++;
             }
             classify(m.getAfterJsonPayload().entrySet(), m.getDataClassLibrary(), scripts.get().get(m.getI().get().toString()).getFields());
-            myWriter.write(sortCLScript(scripts.get().get(m.getI().get().toString())));
+            myWriter.write(sortCLScript(scripts.get().get(m.getI().get().toString()), m));
             myWriter.close();
             LOG.info("Successfully wrote SortCL script to the temporary file.");
         } catch (IOException e) {
@@ -130,6 +132,13 @@ public class Main {
         String dataClassLibraryPathString;
         rulesLibraryPathString = props.getProperty(RULES_LIBRARY_PROPERTY_NAME);
         dataClassLibraryPathString = props.getProperty(DATA_CLASS_LIBRARY_PROPERTY_NAME);
+        String dataTargetSeparator;
+        dataTargetSeparator = props.getProperty(DATA_TARGET_SEPARATOR_PROPERTY_NAME);
+        if (dataTargetSeparator != null && dataTargetSeparator.length() > 0) {
+            m.setDataTargetSeparator(dataTargetSeparator);
+        } else {
+            m.setDataTargetSeparator("\t");
+        }
         String targetNamePostfix = props.getProperty(TARGET_NAME_POSTFIX_PROPERTY_NAME);
         if (targetNamePostfix == null) {
             LOG.warn("{} property not set. Target table name will be the same as source table name.", TARGET_NAME_POSTFIX_PROPERTY_NAME);
@@ -351,6 +360,52 @@ public class Main {
         this.afterJsonPayload = afterJsonPayload;
     }
 
+    public static String sortCLScript(SclScript script, Main m) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("/INFILE=stdin\n/PROCESS=CONCH\n");
+        int count = 0;
+        for (SclField field : script.getFields()) {
+            count++;
+            sb.append("/FIELD=(").append(field.getName()).append(", TYPE=").append("ASCII").append(", POSITION=").append(count).append(", SEPARATOR=\"\\t\"").append(")\n");
+        }
+        sb.append("/STREAM\n");
+        if (script.getTarget() != null && script.getTargetProcessType() != null) {
+            sb.append("/OUTFILE=").append(script.getTarget()).append("\n").append("/PROCESS=").append(script.getTargetProcessType()).append("\n");
+        } else {
+            sb.append("/OUTFILE=\"").append(script.getTable()).append(";DSN=").append(script.getDSN()).append(";\"\n");
+            sb.append("/PROCESS=ODBC\n");
+        }
+        if (script.getTargetProcessType().equals("ODBC") && script.getOperation().equals("u")) { // Assuming that the first column is a primary key - I don't see any information from Debezium about what columns are keys.
+            sb.append("/UPDATE=(");
+            sb.append(script.getFields().get(0).getName());
+            sb.append(")\n");
+        } else {
+            sb.append("/APPEND\n");
+        }
+        count = 0;
+        for (SclField field : script.getFields()) {
+            count++;
+            if (field.expressionApplied) {
+                if (field.getExpression().contains(".set")) { // Assuming the set file ends with extension .set - maybe think of a better conditional test later.
+                    sb.append("/FIELD=(ALTERED_").append(field.getName()).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", SEPARATOR=\"").append(m.getDataTargetSeparator()).append("\", ").append("SET=").append(field.getExpression());
+                } else {
+                    sb.append("/FIELD=(ALTERED_").append(field.getName()).append("=").append(field.getExpression().replace("${FIELDNAME}", field.getName())).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", ").append("SEPARATOR=\"").append(m.getDataTargetSeparator()).append("\"");
+                }
+            } else {
+                sb.append("/FIELD=(").append(field.getName()).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", SEPARATOR=\"\\t\"");
+            }
+            if (field.getPrecision() != -1) {
+                sb.append(", PRECISION=").append(field.getPrecision());
+            }
+            sb.append(")\n");
+        }
+        return sb.toString();
+    }
+
+    public String getDataTargetSeparator() {
+        return dataTargetSeparator;
+    }
+
     public RulesLibrary getRulesLibrary() {
         return rulesLibrary;
     }
@@ -384,46 +439,8 @@ public class Main {
         return i;
     }
 
-    public static String sortCLScript(SclScript script) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("/INFILE=stdin\n/PROCESS=CONCH\n");
-        int count = 0;
-        for (SclField field : script.getFields()) {
-            count++;
-            sb.append("/FIELD=(").append(field.getName()).append(", TYPE=").append("ASCII").append(", POSITION=").append(count).append(", SEPARATOR=\"\\t\"").append(")\n");
-        }
-        sb.append("/STREAM\n");
-        if (script.getTarget() != null && script.getTargetProcessType() != null) {
-            sb.append("/OUTFILE=").append(script.getTarget()).append("\n").append("/PROCESS=").append(script.getTargetProcessType()).append("\n");
-        } else {
-            sb.append("/OUTFILE=\"").append(script.getTable()).append(";DSN=").append(script.getDSN()).append(";\"\n");
-            sb.append("/PROCESS=ODBC\n");
-        }
-        if (script.getTargetProcessType().equals("ODBC") && script.getOperation().equals("u")) { // Assuming that the first column is a primary key - I don't see any information from Debezium about what columns are keys.
-            sb.append("/UPDATE=(");
-            sb.append(script.getFields().get(0).getName());
-            sb.append(")\n");
-        } else {
-            sb.append("/APPEND\n");
-        }
-        count = 0;
-        for (SclField field : script.getFields()) {
-            count++;
-            if (field.expressionApplied) {
-                if (field.getExpression().contains(".set")) { // Assuming the set file ends with extension .set - maybe think of a better conditional test later.
-                    sb.append("/FIELD=(ALTERED_").append(field.getName()).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", SEPARATOR=\"\\t\", ").append("SET=").append(field.getExpression());
-                } else {
-                    sb.append("/FIELD=(ALTERED_").append(field.getName()).append("=").append(field.getExpression().replace("${FIELDNAME}", field.getName())).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", SEPARATOR=\"\\t\"");
-                }
-            } else {
-                sb.append("/FIELD=(").append(field.getName()).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", SEPARATOR=\"\\t\"");
-            }
-            if (field.getPrecision() != -1) {
-                sb.append(", PRECISION=").append(field.getPrecision());
-            }
-            sb.append(")\n");
-        }
-        return sb.toString();
+    public void setDataTargetSeparator(String dataTargetSeparator) {
+        this.dataTargetSeparator = dataTargetSeparator;
     }
 
     public static void classify(Set<Map.Entry<String, JsonElement>> values, DataClassLibrary dataClassLibrary, ArrayList<SclField> fields) {
