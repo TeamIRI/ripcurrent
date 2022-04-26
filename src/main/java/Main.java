@@ -102,15 +102,13 @@ public class Main {
     public static void main(String[] args) throws Exception {
         String ripcurrentHome;
         try {
-            ripcurrentHome = System.getenv("RIPCURRENT_HOME");
+            ripcurrentHome = System.getProperty("APP_HOME");
             if (ripcurrentHome == null) {
-                LOG.error("Could not detect environment variable value for RIPCURRENT_HOME. Please set this environment variable to" +
-                        " the root of the Ripcurrent distribution folder.");
+                LOG.error("Could not detect property value for APP_HOME. Exiting...");
                 return;
             }
         } catch (NullPointerException | SecurityException e) {
-            LOG.error("Could not detect environment variable value for RIPCURRENT_HOME. Please set this environment variable to" +
-                    " the root of the Ripcurrent distribution folder.");
+            LOG.error("Could not detect property value for APP_HOME. Exiting...");
             return;
         }
         LOG.info("Launching Debezium embedded engine");

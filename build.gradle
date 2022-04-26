@@ -1,3 +1,5 @@
+import java.util.regex.Pattern
+
 plugins {
     id 'application'
     id 'distribution'
@@ -15,7 +17,10 @@ mainClassName = 'Main'
 repositories {
     mavenCentral()
 }
-
+// A map of all the required run and test system properties.
+def runtimeProperties = [
+        "APP_HOME": buildDir
+]
 jar {
     archiveBaseName = 'gs-gradle'
     archiveVersion = '0.1.0'
@@ -28,7 +33,7 @@ distributions {
         distributionBaseName = 'ripcurrent'
         contents {
             into("conf") {
-                from(projectDir) {
+                from("conf") {
                     include 'config.properties'
                 }
             }
@@ -49,6 +54,29 @@ downloadLicenses {
 
 license {
     ignoreFailures = true
+}
+startScripts {
+    applicationName = 'ripcurrent'
+    defaultJvmOpts = ['-DAPP_HOME=_APP_HOME']
+
+    doLast {
+        def pattern = Pattern.compile("(?<=CLASSPATH=).+(?=\$)", Pattern.MULTILINE)
+        unixScript.text = pattern.matcher(unixScript.text).replaceFirst("_APP_HOME/lib/*")
+        windowsScript.text = pattern.matcher(windowsScript.text).replaceFirst("_APP_HOME\\\\lib\\\\*")
+
+        unixScript.text = unixScript.text.replace("_APP_HOME", "'\${APP_HOME}'")
+        windowsScript.text = windowsScript.text.replace("_APP_HOME", '"%APP_HOME%"')
+    }
+}
+task copyConfig(type: Copy) {
+    from "$rootDir/conf"
+    into "$buildDir/conf"
+}
+
+// When running the application in dev
+run {
+    dependsOn(copyConfig)
+    systemProperties runtimeProperties
 }
 dependencies {
     // https://mvnrepository.com/artifact/io.debezium/debezium-embedded
