@@ -404,7 +404,7 @@ public class Main {
                     sb.append("/FIELD=(ALTERED_").append(field.getName()).append("=").append(field.getExpression().replace("${FIELDNAME}", field.getName())).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", ").append("SEPARATOR=\"").append(m.getDataTargetSeparator()).append("\"");
                 }
             } else {
-                sb.append("/FIELD=(").append(field.getName()).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", SEPARATOR=\"\\t\"");
+                sb.append("/FIELD=(").append(field.getName()).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ").append("SEPARATOR=\"").append(m.getDataTargetSeparator()).append("\"");
             }
             if (field.getPrecision() != -1) {
                 sb.append(", PRECISION=").append(field.getPrecision());
