@@ -38,10 +38,11 @@ public class DataClassLibrary {
                 if (nNode.getNodeType() == Node.ELEMENT_NODE) {
                     Element eElement = (Element) nNode;
                     String[] defaultRule;
+                    String ruleExpression;
                     try {
                         defaultRule = eElement.getChildNodes().item(0).getNextSibling().getAttributes().getNamedItem("href").getNodeValue().split("#");
                         if (rules.get(defaultRule[1]) != null) {
-                            defaultRule[1] = rules.get(defaultRule[1]).getRule();
+                            ruleExpression = rules.get(defaultRule[1]).getRule();
                         } else { // Default
                            continue;
                         }
@@ -52,7 +53,7 @@ public class DataClassLibrary {
                     for (int temp2 = 0; temp2 < matchersList.getLength(); temp2++) {
                         Node nNode2 = matchersList.item(temp2);
                         HashMap<String, Rule> ruleMap = new HashMap<>();
-                        ruleMap.put(((Element) nNode).getAttribute("name"), new Rule(rules.get(defaultRule[1]).getType(), defaultRule[1]));
+                        ruleMap.put(((Element) nNode).getAttribute("name"), new Rule(rules.get(defaultRule[1]).getType(), ruleExpression));
                         if (nNode2.getAttributes().getNamedItem("type") != null && nNode2.getAttributes().getNamedItem("type").getNodeValue().equals("FILE")) {
                             try {
                                 dataMatcherMap.put(ruleMap, new SetMatcher(nNode2.getAttributes().getNamedItem("details").getNodeValue()));
