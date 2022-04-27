@@ -58,7 +58,7 @@ public class DataClassLibrary {
                             try {
                                 dataMatcherMap.put(ruleMap, new SetMatcher(nNode2.getAttributes().getNamedItem("details").getNodeValue()));
                             } catch (IOException | URISyntaxException e) {
-                                e.printStackTrace();
+                                LOG.error("Set file '{}' does not exist...", nNode2.getAttributes().getNamedItem("details").getNodeValue());
                             }
                         } else {
                             dataMatcherMap.put(ruleMap, new PatternMatcher(nNode2.getAttributes().getNamedItem("details").getNodeValue()));
