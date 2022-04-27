@@ -123,18 +123,14 @@ public class Main {
         }
         LOG.info("Launching Debezium embedded engine");
         Properties props;
+        props = new Properties(System.getProperties());
         Main m = new Main();
         Path ripcurrentConfigPath = java.nio.file.Paths.get(ripcurrentHome, "conf", "config.properties");
         try (InputStream input = new FileInputStream(ripcurrentConfigPath.toAbsolutePath().toString())) {
-
-            props = new Properties();
-
             // load a properties file
             props.load(input);
-
         } catch (IOException ex) {
-            LOG.error("Unable to load 'config.properties' from '{}'; needed for configuration and database connection details. Exiting...", ripcurrentConfigPath);
-            return;
+            LOG.warn("Unable to load 'config.properties' from '{}'; Assuming all configuration properties have been set as system properties...", ripcurrentConfigPath);
         }
         String rulesLibraryPathString;
         String dataClassLibraryPathString;
@@ -402,7 +398,7 @@ public class Main {
         for (SclField field : script.getFields()) {
             count++;
             if (field.expressionApplied) {
-                if (field.getExpression().contains(".set")) { // Assuming the set file ends with extension .set - maybe think of a better conditional test later.
+                if (field.getRuleType() != null && field.getRuleType().equalsIgnoreCase("set")) { // Assuming the set file ends with extension .set - maybe think of a better conditional test later.
                     sb.append("/FIELD=(ALTERED_").append(field.getName()).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", SEPARATOR=\"").append(m.getDataTargetSeparator()).append("\", ").append("SET=").append(field.getExpression());
                 } else {
                     sb.append("/FIELD=(ALTERED_").append(field.getName()).append("=").append(field.getExpression().replace("${FIELDNAME}", field.getName())).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", ").append("SEPARATOR=\"").append(m.getDataTargetSeparator()).append("\"");
@@ -462,10 +458,12 @@ public class Main {
     public static void classify(Set<Map.Entry<String, JsonElement>> values, DataClassLibrary dataClassLibrary, ArrayList<SclField> fields) {
         int count = 0;
         for (Map.Entry<String, JsonElement> value : values) {
-            for (Map.Entry<Map<String, String>, DataMatcher> entry : dataClassLibrary.dataMatcherMap.entrySet()) {
+            for (Map.Entry<Map<String, Rule>, DataMatcher> entry : dataClassLibrary.dataMatcherMap.entrySet()) {
                 if (entry.getValue().isMatch(value.getValue().getAsString())) {
                     fields.get(count).expressionApplied = true;
-                    fields.get(count).expression = (String) entry.getKey().values().toArray()[0];
+                    Rule rule = (Rule) entry.getKey().values().toArray()[0];
+                    fields.get(count).expression = rule.getRule();
+                    fields.get(count).ruleType = rule.getType();
                     break;
                 }
             }

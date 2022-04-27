@@ -37,7 +37,17 @@ public class SclScript {
 
     SclScript(String table, ArrayList<String> fields, String operation, String targetProcessType, Path target, String postfix) {
         this.operation = operation;
-        this.target = target.getParent().toString() + table + "-" + postfix + target.getFileName().toString();
+        Path parent = target.getParent();
+        Path file = target.getFileName();
+        String parentString = "";
+        if (parent != null) {
+            parentString = parent.toString();
+        }
+        String fileString = "";
+        if (file != null) {
+            fileString = file.toString();
+        }
+        this.target = parentString + table + "-" + postfix + fileString;
         this.table = table + postfix;
         this.targetProcessType = targetProcessType;
         for (String fieldName : fields) {

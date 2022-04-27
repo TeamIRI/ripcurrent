@@ -20,7 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class RulesLibrary {
-    Map<String, String> rules = new HashMap<>();
+    Map<String, Rule> rules = new HashMap<>();
     private static final Logger LOG = LoggerFactory.getLogger(RulesLibrary.class);
     // name, rule
     RulesLibrary(String filePath) {
@@ -40,10 +40,10 @@ public class RulesLibrary {
                         Node nNode2 = matchersList.item(temp2);
                         switch (nNode2.getAttributes().getNamedItem("fieldRulePropertyType").getNodeValue()) {
                             case "EXPRESSION":
-                                rules.put(((Element) nNode).getAttribute("name"), nNode2.getAttributes().getNamedItem("value").getNodeValue());
+                                rules.put(((Element) nNode).getAttribute("name"), new Rule("Expression", nNode2.getAttributes().getNamedItem("value").getNodeValue()));
                                 break;
                             case "SET":
-                                rules.put(((Element) nNode).getAttribute("name"), nNode2.getAttributes().getNamedItem("value").getNodeValue().replace("&quot;", "").replace(" SELECT=ANY", ""));
+                                rules.put(((Element) nNode).getAttribute("name"), new Rule("Set", nNode2.getAttributes().getNamedItem("value").getNodeValue().replace("&quot;", "").replace(" SELECT=ANY", "")));
                                 break;
                             default:
                         }
@@ -58,11 +58,11 @@ public class RulesLibrary {
 
     }
 
-    public Map<String, String> getRules() {
+    public Map<String, Rule> getRules() {
         return rules;
     }
 
-    public void setRules(Map<String, String> rules) {
+    public void setRules(Map<String, Rule> rules) {
         this.rules = rules;
     }
 }

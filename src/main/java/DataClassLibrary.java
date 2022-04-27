@@ -22,9 +22,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class DataClassLibrary {
-    Map<Map<String, String>, DataMatcher> dataMatcherMap = new HashMap<>();
+    Map<Map<String, Rule>, DataMatcher> dataMatcherMap = new HashMap<>();
     private static final Logger LOG = LoggerFactory.getLogger(DataClassLibrary.class);
-    DataClassLibrary(String filePath, Map<String, String> rules) {
+
+    DataClassLibrary(String filePath, Map<String, Rule> rules) {
         try {
             File dataClassLibraryFile = new File(filePath);
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
@@ -40,7 +41,7 @@ public class DataClassLibrary {
                     try {
                         defaultRule = eElement.getChildNodes().item(0).getNextSibling().getAttributes().getNamedItem("href").getNodeValue().split("#");
                         if (rules.get(defaultRule[1]) != null) {
-                            defaultRule[1] = rules.get(defaultRule[1]);
+                            defaultRule[1] = rules.get(defaultRule[1]).getRule();
                         } else { // Default
                            continue;
                         }
@@ -50,8 +51,8 @@ public class DataClassLibrary {
                     NodeList matchersList = eElement.getElementsByTagName("matchers");
                     for (int temp2 = 0; temp2 < matchersList.getLength(); temp2++) {
                         Node nNode2 = matchersList.item(temp2);
-                        HashMap<String, String> ruleMap = new HashMap<>();
-                        ruleMap.put(((Element) nNode).getAttribute("name"), defaultRule[1]);
+                        HashMap<String, Rule> ruleMap = new HashMap<>();
+                        ruleMap.put(((Element) nNode).getAttribute("name"), new Rule(rules.get(defaultRule[1]).getType(), defaultRule[1]));
                         if (nNode2.getAttributes().getNamedItem("type") != null && nNode2.getAttributes().getNamedItem("type").getNodeValue().equals("FILE")) {
                             try {
                                 dataMatcherMap.put(ruleMap, new SetMatcher(nNode2.getAttributes().getNamedItem("details").getNodeValue()));

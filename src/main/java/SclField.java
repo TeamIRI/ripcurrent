@@ -10,6 +10,7 @@ public class SclField {
     String name;
     Boolean expressionApplied;
     String expression;
+    String ruleType;
     String dataType;
     Integer precision;
 
@@ -58,5 +59,13 @@ public class SclField {
 
     public void setPrecision(Integer precision) {
         this.precision = precision;
+    }
+
+    public String getRuleType() {
+        return ruleType;
+    }
+
+    public void setRuleType(String ruleType) {
+        this.ruleType = ruleType;
     }
 }

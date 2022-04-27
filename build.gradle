@@ -57,7 +57,8 @@ license {
 }
 startScripts {
     applicationName = 'ripcurrent'
-    defaultJvmOpts = ['-DAPP_HOME=_APP_HOME']
+    defaultJvmOpts = ['-DAPP_HOME=_APP_HOME',
+                      '-Dlog4j.configurationFile=_APP_HOME/conf/log4j.xml']
 
     doLast {
         def pattern = Pattern.compile("(?<=CLASSPATH=).+(?=\$)", Pattern.MULTILINE)
@@ -77,6 +78,7 @@ task copyConfig(type: Copy) {
 run {
     dependsOn(copyConfig)
     systemProperties runtimeProperties
+    systemProperty "log4j.configurationFile", "$rootDir/conf/log4j.xml"
 }
 dependencies {
     // https://mvnrepository.com/artifact/io.debezium/debezium-embedded
