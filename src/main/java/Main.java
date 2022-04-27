@@ -36,6 +36,7 @@ public class Main {
     RulesLibrary rulesLibrary;
     DataClassLibrary dataClassLibrary;
     String postfixTableName;
+    String dataTargetProcessType;
     AtomicReference<Integer> i = new AtomicReference<>();
     JsonObject jsonObject;
     JsonObject afterJsonPayload;
@@ -159,14 +160,18 @@ public class Main {
         if (dataClassLibraryPathString == null) {
             LOG.warn("{} property not set. Please set this property to the absolute path of an IRI data class library.", DATA_CLASS_LIBRARY_PROPERTY_NAME);
         }
-
         RulesLibrary rulesLibrary = new RulesLibrary(props.getProperty(RULES_LIBRARY_PROPERTY_NAME));
         DataClassLibrary dataClassLibrary = new DataClassLibrary(props.getProperty(DATA_CLASS_LIBRARY_PROPERTY_NAME), rulesLibrary.getRules());
         m.setDataClassLibrary(dataClassLibrary);
         m.setRulesLibrary(rulesLibrary);
         m.setProps(props);
         m.getI().set(0);
-
+        String dataTargetProcessTypePropertyValue = m.getProps().getProperty(DATA_TARGET_PROCESS_TYPE_PROPERTY_NAME);
+        if (dataTargetProcessTypePropertyValue == null) {
+            m.setDataTargetProcessType("ODBC");
+        } else {
+            m.setDataTargetProcessType(dataTargetProcessTypePropertyValue);
+        }
         scripts.set(new HashMap<>());
         try (DebeziumEngine<ChangeEvent<String, String>> engine = DebeziumEngine.create(Json.class)
                 .using(props)
@@ -179,7 +184,7 @@ public class Main {
                             if (jsonObject != null && jsonObject.get("payload") != null && jsonObject.get("payload").getAsJsonObject() != null && jsonObject.get("payload").getAsJsonObject().get("op") != null) {
                                 operation = jsonObject.get("payload").getAsJsonObject().get("op").getAsString();
                             }
-                            if (operation.equals("c") || operation.equals("u")) { // Rows added or updated
+                            if (operation.equals("c") || operation.equals("u") || (operation.equals("d") && m.getDataTargetProcessType().equalsIgnoreCase("ODBC"))) { // Rows added or updated
                                 JsonObject Jobject_ = jsonObject.get("payload").getAsJsonObject().get("after").getAsJsonObject();
                                 m.setAfterJsonPayload(Jobject_);
                                 m.getColumns().addAll(Jobject_.keySet());
@@ -284,7 +289,7 @@ public class Main {
                                                 scripts.get().get(Integer.toString(count)).getStdin().write("\t");
                                             }
                                         } catch (IOException e2) {
-                                            LOG.error("Could not write output to target table {}.", scripts.get().get(Integer.toString(count)).getTable());
+                                            LOG.error("Could not write output to target table '{}'.", scripts.get().get(Integer.toString(count)).getTable());
                                             break;
                                         }
                                     }
@@ -295,7 +300,7 @@ public class Main {
                                     scripts.get().get(Integer.toString(count)).getStdin().flush();
                                 } catch (IOException e) { // Pipe is closed; remove the broken script from script map.
                                     // This could happen if there was an error outputting to the target table.
-                                    LOG.error("Could not flush output of script associated with table {}. Removing script...", scripts.get().get(Integer.toString(count)).getTable());
+                                    LOG.error("Could not flush output of script associated with table '{}'. Removing script...", scripts.get().get(Integer.toString(count)).getTable());
                                     scripts.get().remove(Integer.toString(count));
                                 }
                                 if (makeNewScript) {
@@ -382,8 +387,12 @@ public class Main {
             sb.append("/OUTFILE=\"").append(script.getTable()).append(";DSN=").append(script.getDSN()).append(";\"\n");
             sb.append("/PROCESS=ODBC\n");
         }
-        if (script.getTargetProcessType().equals("ODBC") && script.getOperation().equals("u")) { // Assuming that the first column is a primary key - I don't see any information from Debezium about what columns are keys.
+        if (script.getTargetProcessType().equalsIgnoreCase("ODBC") && script.getOperation().equals("u")) { // Assuming that the first column is a primary key - I don't see any information from Debezium about what columns are keys.
             sb.append("/UPDATE=(");
+            sb.append(script.getFields().get(0).getName());
+            sb.append(")\n");
+        } else if (script.getTargetProcessType().equalsIgnoreCase("ODBC") && script.getOperation().equals("d")) {
+            sb.append("/DELETE=(");
             sb.append(script.getFields().get(0).getName());
             sb.append(")\n");
         } else {
@@ -472,8 +481,15 @@ public class Main {
         return postfixTableName;
     }
 
+    public String getDataTargetProcessType() {
+        return dataTargetProcessType;
+    }
+
+    public void setDataTargetProcessType(String dataTargetProcessType) {
+        this.dataTargetProcessType = dataTargetProcessType;
+    }
+
     public void setPostfixTableName(String postfixTableName) {
         this.postfixTableName = postfixTableName;
     }
 }
-
