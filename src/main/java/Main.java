@@ -16,7 +16,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -59,7 +61,12 @@ public class Main {
             String dataTargetProcessType = m.getProps().getProperty(DATA_TARGET_PROCESS_TYPE_PROPERTY_NAME);
             String table = m.getJsonObject().get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString();
             if (dataTarget != null && dataTargetProcessType != null) {
-                scripts.get().put(m.getI().get().toString(), new SclScript(table, m.getColumns(), operation, dataTargetProcessType, dataTarget, m.getPostfixTableName()));
+                try {
+                    Path dataTargetPath = Paths.get(dataTarget);
+                    scripts.get().put(m.getI().get().toString(), new SclScript(table, m.getColumns(), operation, dataTargetProcessType, dataTargetPath, m.getPostfixTableName()));
+                } catch (InvalidPathException invalidPathException) {
+                    LOG.error("Invalid target path for replication '{}'...", dataTarget);
+                }
             } else {
                 scripts.get().put(m.getI().get().toString(), new SclScript(table, m.getProps().getProperty("DSN"), m.getColumns(), operation, m.getPostfixTableName()));
             }

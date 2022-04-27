@@ -22,8 +22,8 @@ def runtimeProperties = [
         "APP_HOME": buildDir
 ]
 jar {
-    archiveBaseName = 'gs-gradle'
-    archiveVersion = '0.1.0'
+    archiveBaseName = 'ripcurrent'
+    archiveVersion = '1.0.0'
 }
 
 sourceCompatibility = 1.8

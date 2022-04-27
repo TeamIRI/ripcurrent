@@ -10,6 +10,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.nio.file.Path;
 import java.util.ArrayList;
 
 public class SclScript {
@@ -34,9 +35,9 @@ public class SclScript {
         this.targetProcessType = "ODBC";
     }
 
-    SclScript(String table, ArrayList<String> fields, String operation, String targetProcessType, String target, String postfix) {
+    SclScript(String table, ArrayList<String> fields, String operation, String targetProcessType, Path target, String postfix) {
         this.operation = operation;
-        this.target = table + "-" + postfix + target;
+        this.target = target.getParent().toString() + table + "-" + postfix + target.getFileName().toString();
         this.table = table + postfix;
         this.targetProcessType = targetProcessType;
         for (String fieldName : fields) {
