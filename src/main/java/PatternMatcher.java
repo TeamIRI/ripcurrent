@@ -10,15 +10,15 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class PatternMatcher implements DataMatcher {
-    private final String pattern;
+    private final Pattern pattern;
 
-    PatternMatcher(String pattern) {
-        this.pattern = pattern;
+    PatternMatcher(String patternString) {
+        this.pattern = Pattern.compile(patternString);
     }
 
     @Override
     public Boolean isMatch(String data) {
-        final Matcher matcher = Pattern.compile(this.pattern).matcher(data);
+        final Matcher matcher = this.pattern.matcher(data);
         return matcher.find();
     }
 }

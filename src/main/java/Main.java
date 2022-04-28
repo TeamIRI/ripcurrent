@@ -458,8 +458,8 @@ public class Main {
     public static void classify(Set<Map.Entry<String, JsonElement>> values, DataClassLibrary dataClassLibrary, ArrayList<SclField> fields) {
         int count = 0;
         for (Map.Entry<String, JsonElement> value : values) {
-            for (Map.Entry<Map<String, Rule>, DataMatcher> entry : dataClassLibrary.dataMatcherMap.entrySet()) {
-                if (entry.getValue().isMatch(value.getValue().getAsString())) {
+            for (Map.Entry<Map<String, Rule>, DataClassMatcher> entry : dataClassLibrary.dataMatcherMap.entrySet()) {
+                if (entry.getValue().getDataMatcher().isMatch(value.getValue().getAsString()) || entry.getValue().getNameMatcher().isMatch(fields.get(count).name)) {
                     fields.get(count).expressionApplied = true;
                     Rule rule = (Rule) entry.getKey().values().toArray()[0];
                     fields.get(count).expression = rule.getRule();

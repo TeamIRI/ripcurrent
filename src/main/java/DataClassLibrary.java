@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class DataClassLibrary {
-    Map<Map<String, Rule>, DataMatcher> dataMatcherMap = new HashMap<>();
+    Map<Map<String, Rule>, DataClassMatcher> dataMatcherMap = new HashMap<>();
     private static final Logger LOG = LoggerFactory.getLogger(DataClassLibrary.class);
 
     DataClassLibrary(String filePath, Map<String, Rule> rules) {
@@ -44,10 +44,14 @@ public class DataClassLibrary {
                         if (rules.get(defaultRule[1]) != null) {
                             ruleExpression = rules.get(defaultRule[1]).getRule();
                         } else { // Default
-                           continue;
+                            continue;
                         }
                     } catch (NullPointerException e) {
                         continue;
+                    }
+                    String nameMatcher = eElement.getAttributes().getNamedItem("nameMatcher").getNodeValue();
+                    if (nameMatcher == null) {
+                        nameMatcher = "";
                     }
                     NodeList matchersList = eElement.getElementsByTagName("matchers");
                     for (int temp2 = 0; temp2 < matchersList.getLength(); temp2++) {
@@ -56,12 +60,12 @@ public class DataClassLibrary {
                         ruleMap.put(((Element) nNode).getAttribute("name"), new Rule(rules.get(defaultRule[1]).getType(), ruleExpression));
                         if (nNode2.getAttributes().getNamedItem("type") != null && nNode2.getAttributes().getNamedItem("type").getNodeValue().equals("FILE")) {
                             try {
-                                dataMatcherMap.put(ruleMap, new SetMatcher(nNode2.getAttributes().getNamedItem("details").getNodeValue()));
+                                dataMatcherMap.put(ruleMap, new DataClassMatcher(new NameMatcher(nameMatcher), new SetMatcher(nNode2.getAttributes().getNamedItem("details").getNodeValue())));
                             } catch (IOException | URISyntaxException e) {
                                 LOG.error("Set file '{}' does not exist...", nNode2.getAttributes().getNamedItem("details").getNodeValue());
                             }
                         } else {
-                            dataMatcherMap.put(ruleMap, new PatternMatcher(nNode2.getAttributes().getNamedItem("details").getNodeValue()));
+                            dataMatcherMap.put(ruleMap, new DataClassMatcher(new NameMatcher(nameMatcher), new PatternMatcher(nNode2.getAttributes().getNamedItem("details").getNodeValue())));
                         }
                     }
                 }
