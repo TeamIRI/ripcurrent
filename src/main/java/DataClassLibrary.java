@@ -6,6 +6,7 @@
  * Contributors:
  *     devonk
  */
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -22,8 +23,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class DataClassLibrary {
-    Map<Map<String, Rule>, DataClassMatcher> dataMatcherMap = new HashMap<>();
     private static final Logger LOG = LoggerFactory.getLogger(DataClassLibrary.class);
+    Map<Map<String, Rule>, DataClassMatcher> dataMatcherMap = new HashMap<>();
 
     DataClassLibrary(String filePath, Map<String, Rule> rules) {
         try {

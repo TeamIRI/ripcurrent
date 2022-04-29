@@ -6,6 +6,7 @@
  * Contributors:
  *     devonk
  */
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.InputStreamReader;
@@ -99,19 +100,19 @@ public class SclScript {
         return process;
     }
 
+    public void setProcess(Process process) {
+        this.process = process;
+        this.stdin = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()));
+        this.stderr = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+        this.stdout = new BufferedReader(new InputStreamReader(process.getInputStream()));
+    }
+
     public String getOperation() {
         return operation;
     }
 
     public void setOperation(String operation) {
         this.operation = operation;
-    }
-
-    public void setProcess(Process process) {
-        this.process = process;
-        this.stdin = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()));
-        this.stderr = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-        this.stdout = new BufferedReader(new InputStreamReader(process.getInputStream()));
     }
 
     public BufferedReader getStderr() {

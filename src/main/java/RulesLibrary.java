@@ -6,6 +6,7 @@
  * Contributors:
  *     devonk
  */
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -20,8 +21,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class RulesLibrary {
-    Map<String, Rule> rules = new HashMap<>();
     private static final Logger LOG = LoggerFactory.getLogger(RulesLibrary.class);
+    Map<String, Rule> rules = new HashMap<>();
+
     // name, rule
     RulesLibrary(String filePath) {
         try {

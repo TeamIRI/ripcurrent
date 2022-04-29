@@ -8,6 +8,7 @@
  * Contributors:
  *     devonk
  */
+
 import com.google.gson.*;
 import io.debezium.engine.ChangeEvent;
 import io.debezium.engine.DebeziumEngine;
@@ -33,6 +34,8 @@ public class Main {
     final static String DATA_TARGET_PROPERTY_NAME = "dataTarget";
     final static String DATA_TARGET_PROCESS_TYPE_PROPERTY_NAME = "dataTargetProcessType";
     final static String DATA_TARGET_SEPARATOR_PROPERTY_NAME = "dataTargetSeparator";
+    private static final Logger LOG = LoggerFactory.getLogger(Main.class);
+    static AtomicReference<HashMap<String, SclScript>> scripts = new AtomicReference<>();
     RulesLibrary rulesLibrary;
     DataClassLibrary dataClassLibrary;
     String postfixTableName;
@@ -60,7 +63,7 @@ public class Main {
             FileWriter myWriter = new FileWriter(tempFile);
             String dataTarget = m.getProps().getProperty(DATA_TARGET_PROPERTY_NAME);
             String dataTargetProcessType = m.getProps().getProperty(DATA_TARGET_PROCESS_TYPE_PROPERTY_NAME);
-            String table = m.getJsonObject().get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString();
+            String table = m.getJsonObject().get("payload").getAsJsonObject().get("source").getAsJsonObject().get("db").getAsString() + "." + m.getJsonObject().get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString();
             if (dataTarget != null && dataTargetProcessType != null) {
                 try {
                     Path dataTargetPath = Paths.get(dataTarget);
@@ -95,7 +98,7 @@ public class Main {
             classify(m.getAfterJsonPayload().entrySet(), m.getDataClassLibrary(), scripts.get().get(m.getI().get().toString()).getFields());
             myWriter.write(sortCLScript(scripts.get().get(m.getI().get().toString()), m));
             myWriter.close();
-            LOG.info("New SortCL replication job started for table {}.", table);
+            LOG.info("New SortCL replication job started for table '{}'.", table);
         } catch (IOException e) {
             LOG.error("An error occurred when writing SortCL script to a temporary file.");
             e.printStackTrace();
@@ -308,6 +311,8 @@ public class Main {
                                     m.getI().set(m.getI().get() + 1);
                                 }
                                 m.getColumns().clear();
+                            } else if (operation.equals("")) {
+                                System.out.println("Database structure change event detected.");
                             }
                         } catch (NullPointerException ee) {
                             ee.printStackTrace();
@@ -330,6 +335,107 @@ public class Main {
             executor.shutdown();
             awaitTermination(executor);
             LOG.info("Engine terminated");
+        }
+    }
+
+    public static String sortCLScript(SclScript script, Main m) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("/INFILE=stdin\n/PROCESS=CONCH\n");
+        int count = 0;
+        for (SclField field : script.getFields()) {
+            count++;
+            sb.append("/FIELD=(").append(field.getName()).append(", TYPE=").append("ASCII").append(", POSITION=").append(count).append(", SEPARATOR=\"\\t\"").append(")\n");
+        }
+        sb.append("/STREAM\n");
+        if (script.getTarget() != null && script.getTargetProcessType() != null) {
+            sb.append("/OUTFILE=").append(script.getTarget()).append("\n").append("/PROCESS=").append(script.getTargetProcessType()).append("\n");
+            if (script.getTargetProcessType().equalsIgnoreCase("ODBC") && script.getOperation().equals("u")) { // Assuming that the first column is a primary key - I don't see any information from Debezium about what columns are keys.
+                sb.append("/UPDATE=(");
+                sb.append(script.getFields().get(0).getName());
+                sb.append(")\n");
+            } else if (script.getTargetProcessType().equalsIgnoreCase("ODBC") && script.getOperation().equals("d")) {
+                sb.append("/DELETE=(");
+                sb.append(script.getFields().get(0).getName());
+                sb.append(")\n");
+            } else {
+                sb.append("/APPEND\n");
+            }
+            count = 0;
+            for (SclField field : script.getFields()) {
+                count++;
+                if (field.expressionApplied) {
+                    if (field.getRuleType() != null && field.getRuleType().equalsIgnoreCase("set")) { // Assuming the set file ends with extension .set - maybe think of a better conditional test later.
+                        sb.append("/FIELD=(ALTERED_").append(field.getName()).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", SEPARATOR=\"").append(m.getDataTargetSeparator()).append("\", ").append("SET=").append(field.getExpression());
+                    } else {
+                        sb.append("/FIELD=(ALTERED_").append(field.getName()).append("=").append(field.getExpression().replace("${FIELDNAME}", field.getName())).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", ").append("SEPARATOR=\"").append(m.getDataTargetSeparator()).append("\"");
+                    }
+                } else {
+                    sb.append("/FIELD=(").append(field.getName()).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ").append("SEPARATOR=\"").append(m.getDataTargetSeparator()).append("\"");
+                }
+                if (field.getPrecision() != -1) {
+                    sb.append(", PRECISION=").append(field.getPrecision());
+                }
+                sb.append(")\n");
+            }
+        }
+        if (script.getDSN() != null) {
+            sb.append("/OUTFILE=\"").append(script.getTable()).append(";DSN=").append(script.getDSN()).append(";\"\n");
+            sb.append("/PROCESS=ODBC\n");
+            if (script.getTargetProcessType().equalsIgnoreCase("ODBC") && script.getOperation().equals("u")) { // Assuming that the first column is a primary key - I don't see any information from Debezium about what columns are keys.
+                sb.append("/UPDATE=(");
+                sb.append(script.getFields().get(0).getName());
+                sb.append(")\n");
+            } else if (script.getTargetProcessType().equalsIgnoreCase("ODBC") && script.getOperation().equals("d")) {
+                sb.append("/DELETE=(");
+                sb.append(script.getFields().get(0).getName());
+                sb.append(")\n");
+            } else {
+                sb.append("/APPEND\n");
+            }
+            count = 0;
+            for (SclField field : script.getFields()) {
+                count++;
+                if (field.expressionApplied) {
+                    if (field.getRuleType() != null && field.getRuleType().equalsIgnoreCase("set")) { // Assuming the set file ends with extension .set - maybe think of a better conditional test later.
+                        sb.append("/FIELD=(ALTERED_").append(field.getName()).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", SEPARATOR=\"").append(m.getDataTargetSeparator()).append("\", ").append("SET=").append(field.getExpression());
+                    } else {
+                        sb.append("/FIELD=(ALTERED_").append(field.getName()).append("=").append(field.getExpression().replace("${FIELDNAME}", field.getName())).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", ").append("SEPARATOR=\"").append(m.getDataTargetSeparator()).append("\"");
+                    }
+                } else {
+                    sb.append("/FIELD=(").append(field.getName()).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ").append("SEPARATOR=\"").append(m.getDataTargetSeparator()).append("\"");
+                }
+                if (field.getPrecision() != -1) {
+                    sb.append(", PRECISION=").append(field.getPrecision());
+                }
+                sb.append(")\n");
+            }
+        }
+        return sb.toString();
+    }
+
+    private static void awaitTermination(ExecutorService executor) {
+        try {
+            while (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
+                LOG.debug("Debezium embedded engine running...");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    public static void classify(Set<Map.Entry<String, JsonElement>> values, DataClassLibrary dataClassLibrary, ArrayList<SclField> fields) {
+        int count = 0;
+        for (Map.Entry<String, JsonElement> value : values) {
+            for (Map.Entry<Map<String, Rule>, DataClassMatcher> entry : dataClassLibrary.dataMatcherMap.entrySet()) {
+                if (entry.getValue().getDataMatcher().isMatch(value.getValue().getAsString()) || entry.getValue().getNameMatcher().isMatch(fields.get(count).name)) {
+                    fields.get(count).expressionApplied = true;
+                    Rule rule = (Rule) entry.getKey().values().toArray()[0];
+                    fields.get(count).expression = rule.getRule();
+                    fields.get(count).ruleType = rule.getType();
+                    break;
+                }
+            }
+            count++;
         }
     }
 
@@ -373,54 +479,12 @@ public class Main {
         this.afterJsonPayload = afterJsonPayload;
     }
 
-    public static String sortCLScript(SclScript script, Main m) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("/INFILE=stdin\n/PROCESS=CONCH\n");
-        int count = 0;
-        for (SclField field : script.getFields()) {
-            count++;
-            sb.append("/FIELD=(").append(field.getName()).append(", TYPE=").append("ASCII").append(", POSITION=").append(count).append(", SEPARATOR=\"\\t\"").append(")\n");
-        }
-        sb.append("/STREAM\n");
-        if (script.getTarget() != null && script.getTargetProcessType() != null) {
-            sb.append("/OUTFILE=").append(script.getTarget()).append("\n").append("/PROCESS=").append(script.getTargetProcessType()).append("\n");
-        } else {
-            sb.append("/OUTFILE=\"").append(script.getTable()).append(";DSN=").append(script.getDSN()).append(";\"\n");
-            sb.append("/PROCESS=ODBC\n");
-        }
-        if (script.getTargetProcessType().equalsIgnoreCase("ODBC") && script.getOperation().equals("u")) { // Assuming that the first column is a primary key - I don't see any information from Debezium about what columns are keys.
-            sb.append("/UPDATE=(");
-            sb.append(script.getFields().get(0).getName());
-            sb.append(")\n");
-        } else if (script.getTargetProcessType().equalsIgnoreCase("ODBC") && script.getOperation().equals("d")) {
-            sb.append("/DELETE=(");
-            sb.append(script.getFields().get(0).getName());
-            sb.append(")\n");
-        } else {
-            sb.append("/APPEND\n");
-        }
-        count = 0;
-        for (SclField field : script.getFields()) {
-            count++;
-            if (field.expressionApplied) {
-                if (field.getRuleType() != null && field.getRuleType().equalsIgnoreCase("set")) { // Assuming the set file ends with extension .set - maybe think of a better conditional test later.
-                    sb.append("/FIELD=(ALTERED_").append(field.getName()).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", SEPARATOR=\"").append(m.getDataTargetSeparator()).append("\", ").append("SET=").append(field.getExpression());
-                } else {
-                    sb.append("/FIELD=(ALTERED_").append(field.getName()).append("=").append(field.getExpression().replace("${FIELDNAME}", field.getName())).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", ").append("SEPARATOR=\"").append(m.getDataTargetSeparator()).append("\"");
-                }
-            } else {
-                sb.append("/FIELD=(").append(field.getName()).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ").append("SEPARATOR=\"").append(m.getDataTargetSeparator()).append("\"");
-            }
-            if (field.getPrecision() != -1) {
-                sb.append(", PRECISION=").append(field.getPrecision());
-            }
-            sb.append(")\n");
-        }
-        return sb.toString();
-    }
-
     public String getDataTargetSeparator() {
         return dataTargetSeparator;
+    }
+
+    public void setDataTargetSeparator(String dataTargetSeparator) {
+        this.dataTargetSeparator = dataTargetSeparator;
     }
 
     public RulesLibrary getRulesLibrary() {
@@ -439,41 +503,8 @@ public class Main {
         this.dataClassLibrary = dataClassLibrary;
     }
 
-    static AtomicReference<HashMap<String, SclScript>> scripts = new AtomicReference<>();
-    private static final Logger LOG = LoggerFactory.getLogger(Main.class);
-
-    private static void awaitTermination(ExecutorService executor) {
-        try {
-            while (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
-                LOG.debug("Debezium embedded engine running...");
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-    }
-
     public AtomicReference<Integer> getI() {
         return i;
-    }
-
-    public void setDataTargetSeparator(String dataTargetSeparator) {
-        this.dataTargetSeparator = dataTargetSeparator;
-    }
-
-    public static void classify(Set<Map.Entry<String, JsonElement>> values, DataClassLibrary dataClassLibrary, ArrayList<SclField> fields) {
-        int count = 0;
-        for (Map.Entry<String, JsonElement> value : values) {
-            for (Map.Entry<Map<String, Rule>, DataClassMatcher> entry : dataClassLibrary.dataMatcherMap.entrySet()) {
-                if (entry.getValue().getDataMatcher().isMatch(value.getValue().getAsString()) || entry.getValue().getNameMatcher().isMatch(fields.get(count).name)) {
-                    fields.get(count).expressionApplied = true;
-                    Rule rule = (Rule) entry.getKey().values().toArray()[0];
-                    fields.get(count).expression = rule.getRule();
-                    fields.get(count).ruleType = rule.getType();
-                    break;
-                }
-            }
-            count++;
-        }
     }
 
     public void setI(AtomicReference<Integer> i) {
@@ -484,15 +515,15 @@ public class Main {
         return postfixTableName;
     }
 
+    public void setPostfixTableName(String postfixTableName) {
+        this.postfixTableName = postfixTableName;
+    }
+
     public String getDataTargetProcessType() {
         return dataTargetProcessType;
     }
 
     public void setDataTargetProcessType(String dataTargetProcessType) {
         this.dataTargetProcessType = dataTargetProcessType;
-    }
-
-    public void setPostfixTableName(String postfixTableName) {
-        this.postfixTableName = postfixTableName;
     }
 }
