@@ -67,7 +67,12 @@ public class Main {
             if (dataTarget != null && dataTargetProcessType != null) {
                 try {
                     Path dataTargetPath = Paths.get(dataTarget);
-                    scripts.get().put(m.getI().get().toString(), new SclScript(table, m.getColumns(), operation, dataTargetProcessType, dataTargetPath, m.getPostfixTableName()));
+                    String DSN = m.getProps().getProperty("DSN");
+                    if (DSN != null) {
+                        scripts.get().put(m.getI().get().toString(), new SclScript(table, m.getColumns(), operation, dataTargetProcessType, dataTargetPath, m.getPostfixTableName(), DSN));
+                    } else {
+                        scripts.get().put(m.getI().get().toString(), new SclScript(table, m.getColumns(), operation, dataTargetProcessType, dataTargetPath, m.getPostfixTableName()));
+                    }
                 } catch (InvalidPathException invalidPathException) {
                     LOG.error("Invalid target path for replication '{}'...", dataTarget);
                 }
@@ -241,7 +246,7 @@ public class Main {
                                 if (scripts.get() != null && scripts.get().values().size() > 0) {
                                     for (SclScript script : scripts.get().values()) {
 
-                                        if (!script.getOperation().equals(operation) || !script.getTable().equals(jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString() + m.getPostfixTableName()) || !script.getFields().stream()
+                                        if (!script.getOperation().equals(operation) || !script.getTable().equals(jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("db").getAsString() + "." + jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString() + m.getPostfixTableName()) || !script.getFields().stream()
                                                 .map(SclField::getName)
                                                 .collect(Collectors.toList()).equals(m.getColumns())) {
                                             count++;
@@ -277,7 +282,7 @@ public class Main {
                                         if (scripts.get() != null && scripts.get().values().size() > 0) {
                                             for (SclScript script : scripts.get().values()) {
 
-                                                if (!script.getTable().equals(jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString() + props.getProperty(TARGET_NAME_POSTFIX_PROPERTY_NAME)) || !script.getFields().stream()
+                                                if (!script.getTable().equals(jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("db").getAsString() + "." + jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString() + props.getProperty(TARGET_NAME_POSTFIX_PROPERTY_NAME)) || !script.getFields().stream()
                                                         .map(SclField::getName)
                                                         .collect(Collectors.toList()).equals(m.getColumns())) {
                                                     count++;
@@ -312,7 +317,14 @@ public class Main {
                                 }
                                 m.getColumns().clear();
                             } else if (operation.equals("")) {
-                                System.out.println("Database structure change event detected.");
+                                try {
+                                    String database = jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("db").getAsString();
+                                    String table = jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString();
+                                    String ddl = jsonObject.get("payload").getAsJsonObject().get("ddl").getAsString();
+                                    System.out.println(String.format("Database structure change event '%s' detected for table '%s.%s'.", ddl, database, table));
+                                } catch (Exception e) {
+                                    System.out.println("Database structure change event detected.");
+                                }
                             }
                         } catch (NullPointerException ee) {
                             ee.printStackTrace();
