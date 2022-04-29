@@ -95,7 +95,7 @@ public class Main {
             classify(m.getAfterJsonPayload().entrySet(), m.getDataClassLibrary(), scripts.get().get(m.getI().get().toString()).getFields());
             myWriter.write(sortCLScript(scripts.get().get(m.getI().get().toString()), m));
             myWriter.close();
-            LOG.info("Successfully wrote SortCL script to the temporary file.");
+            LOG.info("New SortCL replication job started for table {}.", table);
         } catch (IOException e) {
             LOG.error("An error occurred when writing SortCL script to a temporary file.");
             e.printStackTrace();

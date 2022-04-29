@@ -21,7 +21,7 @@ public class NameMatcher {
 
     public Boolean isMatch(String column) {
         final Matcher matcher = this.pattern.matcher(column);
-        return matcher.find();
+        return matcher.matches();
     }
 
     public String getPatternString() {

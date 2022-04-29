@@ -19,6 +19,6 @@ public class PatternMatcher implements DataMatcher {
     @Override
     public Boolean isMatch(String data) {
         final Matcher matcher = this.pattern.matcher(data);
-        return matcher.find();
+        return matcher.matches();
     }
 }
