@@ -181,7 +181,12 @@ public class Main {
                                 operation = jsonObject.get("payload").getAsJsonObject().get("op").getAsString();
                             }
                             if (operation.equals("c") || operation.equals("u") || (operation.equals("d") && m.getDataTargetProcessType().equalsIgnoreCase("ODBC"))) { // Rows added or updated
-                                JsonObject Jobject_ = jsonObject.get("payload").getAsJsonObject().get("after").getAsJsonObject();
+                                JsonObject Jobject_;
+                                if (operation.equals("d")) {
+                                    Jobject_ = jsonObject.get("payload").getAsJsonObject().get("before").getAsJsonObject();
+                                } else {
+                                    Jobject_ = jsonObject.get("payload").getAsJsonObject().get("after").getAsJsonObject();
+                                }
                                 m.setAfterJsonPayload(Jobject_);
                                 m.getColumns().addAll(Jobject_.keySet());
                                 int count = 0;
