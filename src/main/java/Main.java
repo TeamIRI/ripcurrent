@@ -34,11 +34,13 @@ public class Main {
     final static String DATA_TARGET_PROPERTY_NAME = "dataTarget";
     final static String DATA_TARGET_PROCESS_TYPE_PROPERTY_NAME = "dataTargetProcessType";
     final static String DATA_TARGET_SEPARATOR_PROPERTY_NAME = "dataTargetSeparator";
+    final static String DATA_TARGET_SCHEMA_PROPERTY_NAME = "dataTargetSchema";
     private static final Logger LOG = LoggerFactory.getLogger(Main.class);
     static AtomicReference<HashMap<String, SclScript>> scripts = new AtomicReference<>();
     RulesLibrary rulesLibrary;
     DataClassLibrary dataClassLibrary;
     String postfixTableName;
+    String dataTargetSchema;
     String dataTargetProcessType;
     AtomicReference<Integer> i = new AtomicReference<>();
     JsonObject jsonObject;
@@ -63,7 +65,12 @@ public class Main {
             FileWriter myWriter = new FileWriter(tempFile);
             String dataTarget = m.getProps().getProperty(DATA_TARGET_PROPERTY_NAME);
             String dataTargetProcessType = m.getProps().getProperty(DATA_TARGET_PROCESS_TYPE_PROPERTY_NAME);
-            String table = m.getJsonObject().get("payload").getAsJsonObject().get("source").getAsJsonObject().get("db").getAsString() + "." + m.getJsonObject().get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString();
+            String table;
+            if (m.getDataTargetSchema() != null) {
+                table = m.getDataTargetSchema() + "." + m.getJsonObject().get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString();
+            } else {
+                table = m.getJsonObject().get("payload").getAsJsonObject().get("source").getAsJsonObject().get("db").getAsString() + "." + m.getJsonObject().get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString();
+            }
             if (dataTarget != null && dataTargetProcessType != null) {
                 try {
                     Path dataTargetPath = Paths.get(dataTarget);
@@ -150,6 +157,10 @@ public class Main {
             m.setDataTargetSeparator(dataTargetSeparator);
         } else {
             m.setDataTargetSeparator("\t");
+        }
+        String dataTargetSchema = props.getProperty(DATA_TARGET_SCHEMA_PROPERTY_NAME);
+        if (dataTargetSchema != null && dataTargetSchema.length() > 0) {
+            m.setDataTargetSchema(dataTargetSchema);
         }
         String targetNamePostfix = props.getProperty(TARGET_NAME_POSTFIX_PROPERTY_NAME);
         if (targetNamePostfix == null) {
@@ -538,4 +549,13 @@ public class Main {
     public void setDataTargetProcessType(String dataTargetProcessType) {
         this.dataTargetProcessType = dataTargetProcessType;
     }
+
+    public String getDataTargetSchema() {
+        return dataTargetSchema;
+    }
+
+    public void setDataTargetSchema(String dataTargetSchema) {
+        this.dataTargetSchema = dataTargetSchema;
+    }
+
 }
