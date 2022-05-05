@@ -156,7 +156,7 @@ public class Main {
         if (dataTargetSeparator != null && dataTargetSeparator.length() > 0) {
             m.setDataTargetSeparator(dataTargetSeparator);
         } else {
-            m.setDataTargetSeparator("\t");
+            m.setDataTargetSeparator("\\t");
         }
         String dataTargetSchema = props.getProperty(DATA_TARGET_SCHEMA_PROPERTY_NAME);
         if (dataTargetSchema != null && dataTargetSchema.length() > 0) {
