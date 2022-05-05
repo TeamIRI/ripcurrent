@@ -40,7 +40,7 @@ public class SclScript {
         this.operation = operation;
         Path parent = target.getParent();
         Path file = target.getFileName();
-        String parentString = "";
+        String parentString = ".";
         if (parent != null) {
             parentString = parent.toString();
         }
@@ -60,7 +60,7 @@ public class SclScript {
         this.operation = operation;
         Path parent = target.getParent();
         Path file = target.getFileName();
-        String parentString = "";
+        String parentString = ".";
         if (parent != null) {
             parentString = parent.toString();
         }
