@@ -61,7 +61,7 @@ public class SclScript {
         if (file != null) {
             fileString = file.toString();
         }
-        this.target = parentString + "/" + sourceSchema + "_" + sourceTable + "-" + postfix + fileString;
+        this.target = parentString + "/" + sourceSchema + "_" + sourceTable + "-" + postfix + "-" + fileString;
         this.sourceTableIdentifier = sourceSchema + "." + sourceTable;
         this.targetProcessType = targetProcessType;
         for (String fieldName : fields) {
@@ -88,7 +88,7 @@ public class SclScript {
         } else {
             this.targetTableIdentifier = sourceTable + postfix;
         }
-        this.target = parentString + "/" + sourceSchema + "_" + sourceTable + "-" + postfix + fileString;
+        this.target = parentString + "/" + sourceSchema + "_" + sourceTable + "-" + postfix + "-" + fileString;
         this.sourceTableIdentifier = sourceSchema + "." + sourceTable;
         this.targetProcessType = targetProcessType;
         for (String fieldName : fields) {
