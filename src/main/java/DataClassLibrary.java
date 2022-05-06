@@ -63,7 +63,7 @@ public class DataClassLibrary {
                             try {
                                 dataMatcherMap.put(ruleMap, new DataClassMatcher(new NameMatcher(nameMatcher), new SetMatcher(nNode2.getAttributes().getNamedItem("details").getNodeValue())));
                             } catch (IOException | URISyntaxException e) {
-                                LOG.error("Set file '{}' does not exist...", nNode2.getAttributes().getNamedItem("details").getNodeValue());
+                                LOG.warn("Set file '{}' does not exist...", nNode2.getAttributes().getNamedItem("details").getNodeValue());
                             }
                         } else {
                             dataMatcherMap.put(ruleMap, new DataClassMatcher(new NameMatcher(nameMatcher), new PatternMatcher(nNode2.getAttributes().getNamedItem("details").getNodeValue())));
@@ -72,7 +72,7 @@ public class DataClassLibrary {
                 }
             }
         } catch (Exception e) {
-            LOG.error("Could not parse data class library '{}'...", filePath);
+            LOG.warn("Could not parse data class library '{}'...", filePath);
             e.printStackTrace();
         }
     }

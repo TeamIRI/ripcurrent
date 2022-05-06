@@ -2,8 +2,8 @@
  * Copyright (c) 2022 Innovative Routines International (IRI), Inc.
  *
  * Description: Main class for Ripcurrent application. This application monitors for database changes using Debezium embedded engine connectors,
- *  and will dynamically generated and run sortcl scripts to transport data to target tables, with any transformations
- *  consistently applied based on rules mapped to data classes.
+ * and will dynamically generated and run sortcl scripts to transport data to target tables, with any transformations
+ * consistently applied based on rules mapped to data classes.
  *
  * Contributors:
  *     devonk
@@ -29,112 +29,41 @@ import java.util.stream.Collectors;
 
 public class Main {
     final static String DATA_CLASS_LIBRARY_PROPERTY_NAME = "dataClassLibraryPath";
+    final static String DATA_TARGET_PROCESS_TYPE_PROPERTY_NAME = "dataTargetProcessType";
+    final static String DATA_TARGET_PROPERTY_NAME = "dataTarget";
+    final static String DATA_TARGET_SCHEMA_PROPERTY_NAME = "dataTargetSchema";
+    final static String DATA_TARGET_SEPARATOR_PROPERTY_NAME = "dataTargetSeparator";
     final static String RULES_LIBRARY_PROPERTY_NAME = "rulesLibraryPath";
     final static String TARGET_NAME_POSTFIX_PROPERTY_NAME = "targetNamePostfix";
-    final static String DATA_TARGET_PROPERTY_NAME = "dataTarget";
-    final static String DATA_TARGET_PROCESS_TYPE_PROPERTY_NAME = "dataTargetProcessType";
-    final static String DATA_TARGET_SEPARATOR_PROPERTY_NAME = "dataTargetSeparator";
-    final static String DATA_TARGET_SCHEMA_PROPERTY_NAME = "dataTargetSchema";
     private static final Logger LOG = LoggerFactory.getLogger(Main.class);
-    static AtomicReference<HashMap<String, SclScript>> scripts = new AtomicReference<>();
-    RulesLibrary rulesLibrary;
-    DataClassLibrary dataClassLibrary;
-    String postfixTableName;
-    String dataTargetSchema;
-    String dataTargetProcessType;
-    AtomicReference<Integer> i = new AtomicReference<>();
-    JsonObject jsonObject;
+
+    static AtomicReference<HashMap<String, SclScript>> scripts = new AtomicReference<>(); // Holds references to current SortCL jobs.
+
     JsonObject afterJsonPayload;
+    ArrayList<String> columns = new ArrayList<>(); // A list of column names for the specific source table.
+    DataClassLibrary dataClassLibrary; // Ripcurrent will attempt to parse an existing IRI data class library when its path is specified as a Java property to the application.
+    String dataTargetProcessType; // Process type for the data target.
+    String dataTargetSchema; // Schema for the data target (if using ODBC).
+    String dataTargetSeparator; // Separator to place in the SortCL script for the data target.
     JsonArray fieldsArray;
-    Properties props;
-    ArrayList<String> columns = new ArrayList<>();
-    String dataTargetSeparator;
+    AtomicReference<Integer> i = new AtomicReference<>(); // A key to identify a specific SortCL job in the map of jobs.
+    JsonObject jsonObject; // The Debezium change event is in JSON.
+    String postfixTableName; // Target postfix string.
+    Properties props; // Java configuration properties.
+    RulesLibrary rulesLibrary; // Ripcurrent will attempt to parse an existing IRI rules library when its path is specified as a Java property to the application.
 
-    public static void makeANewScript(Main m, String operation) {
-        int loopTrack = 0;
-        File tempFile = null;
-        try {
-            tempFile = File.createTempFile("sortcl", ".tmp");
-        } catch (IOException e) {
-            LOG.error("An error occurred when creating a temporary file.");
-            e.printStackTrace();
-        }
-        assert tempFile != null;
-        tempFile.deleteOnExit();
-        try { // Generating the SortCL script dynamically.
-            FileWriter myWriter = new FileWriter(tempFile);
-            String dataTarget = m.getProps().getProperty(DATA_TARGET_PROPERTY_NAME);
-            String dataTargetProcessType = m.getProps().getProperty(DATA_TARGET_PROCESS_TYPE_PROPERTY_NAME);
-            String table;
-            if (m.getDataTargetSchema() != null) {
-                table = m.getDataTargetSchema() + "." + m.getJsonObject().get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString();
-            } else {
-                table = m.getJsonObject().get("payload").getAsJsonObject().get("source").getAsJsonObject().get("db").getAsString() + "." + m.getJsonObject().get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString();
-            }
-            if (dataTarget != null && dataTargetProcessType != null) {
-                try {
-                    Path dataTargetPath = Paths.get(dataTarget);
-                    String DSN = m.getProps().getProperty("DSN");
-                    if (DSN != null) {
-                        scripts.get().put(m.getI().get().toString(), new SclScript(table, m.getColumns(), operation, dataTargetProcessType, dataTargetPath, m.getPostfixTableName(), DSN));
-                    } else {
-                        scripts.get().put(m.getI().get().toString(), new SclScript(table, m.getColumns(), operation, dataTargetProcessType, dataTargetPath, m.getPostfixTableName()));
-                    }
-                } catch (InvalidPathException invalidPathException) {
-                    LOG.error("Invalid target path for replication '{}'...", dataTarget);
-                }
-            } else {
-                scripts.get().put(m.getI().get().toString(), new SclScript(table, m.getProps().getProperty("DSN"), m.getColumns(), operation, m.getPostfixTableName()));
-            }
-            for (JsonElement object : m.getFieldsArray()) {
-                String type = object.getAsJsonObject().get("type").getAsString();
-                JsonElement name = object.getAsJsonObject().get("name");
-                if (type == null) {
-                    loopTrack++;
-                    continue;
-                }
-                switch (type) {
-                    case "int32":
-                        if (name == null) {
-                            scripts.get().get(m.getI().get().toString()).getFields().get(loopTrack).setDataType("NUMERIC");
-                            scripts.get().get(m.getI().get().toString()).getFields().get(loopTrack).setPrecision(0);
-                        } else {
-                            scripts.get().get(m.getI().get().toString()).getFields().get(loopTrack).setDataType("ISO_DATE");
-                        }
-                        break;
-                    default:
-
-                }
-                loopTrack++;
-            }
-            classify(m.getAfterJsonPayload().entrySet(), m.getDataClassLibrary(), scripts.get().get(m.getI().get().toString()).getFields());
-            myWriter.write(sortCLScript(scripts.get().get(m.getI().get().toString()), m));
-            myWriter.close();
-            LOG.info("New SortCL replication job started for table '{}'.", table);
-        } catch (IOException e) {
-            LOG.error("An error occurred when writing SortCL script to a temporary file.");
-            e.printStackTrace();
-        }
-
-        try {
-            scripts.get().get(m.getI().toString()).setProcess(new ProcessBuilder("sortcl", "/SPEC=" + tempFile.getAbsolutePath()).redirectErrorStream(true).start());
-        } catch (IOException e) {
-            LOG.error("An error occurred when starting sortcl process.");
-            e.printStackTrace();
-        }
-    }
-
+    // Main method; parse properties, data class library, rules library, and start Debezium engine.
     public static void main(String[] args) throws Exception {
-        String ripcurrentHome;
+        String ripcurrentHome = null;
         try {
             ripcurrentHome = System.getProperty("APP_HOME");
             if (ripcurrentHome == null) {
                 LOG.error("Could not detect property value for APP_HOME. Exiting...");
-                return;
+                System.exit(2);
             }
         } catch (NullPointerException | SecurityException e) {
             LOG.error("Could not detect property value for APP_HOME. Exiting...");
-            return;
+            System.exit(2);
         }
         LOG.info("Launching Debezium embedded engine");
         Properties props;
@@ -170,10 +99,10 @@ public class Main {
             m.setPostfixTableName(targetNamePostfix);
         }
         if (rulesLibraryPathString == null) {
-            LOG.warn("{} property not set. Please set this property to the absolute path of an IRI rules library.", RULES_LIBRARY_PROPERTY_NAME);
+            LOG.warn("{} property not set. Please set this property to the absolute path of an IRI rules library to apply rules.", RULES_LIBRARY_PROPERTY_NAME);
         }
         if (dataClassLibraryPathString == null) {
-            LOG.warn("{} property not set. Please set this property to the absolute path of an IRI data class library.", DATA_CLASS_LIBRARY_PROPERTY_NAME);
+            LOG.warn("{} property not set. Please set this property to the absolute path of an IRI data class library to classify data.", DATA_CLASS_LIBRARY_PROPERTY_NAME);
         }
         RulesLibrary rulesLibrary = new RulesLibrary(props.getProperty(RULES_LIBRARY_PROPERTY_NAME));
         DataClassLibrary dataClassLibrary = new DataClassLibrary(props.getProperty(DATA_CLASS_LIBRARY_PROPERTY_NAME), rulesLibrary.getRules());
@@ -192,6 +121,7 @@ public class Main {
                 .using(props)
                 .notifying(record -> {
                     if (record.value() != null) {
+                        String scriptsKey = null;
                         try {
                             JsonObject jsonObject = JsonParser.parseString(record.value()).getAsJsonObject();
                             m.setJsonObject(jsonObject);
@@ -253,23 +183,26 @@ public class Main {
                                     }
                                     loopTrack++;
                                 }
-
+                                scriptsKey = "0";
                                 if (scripts.get() != null && scripts.get().values().size() > 0) {
                                     for (SclScript script : scripts.get().values()) {
 
-                                        if (!script.getOperation().equals(operation) || !script.getTable().equals(jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("db").getAsString() + "." + jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString() + m.getPostfixTableName()) || !script.getFields().stream()
+                                        if (!script.getOperation().equals(operation) || !script.getSourceTableIdentifier().equals(jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("db").getAsString() + "." + jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString()) || !script.getFields().stream()
                                                 .map(SclField::getName)
                                                 .collect(Collectors.toList()).equals(m.getColumns())) {
                                             count++;
                                             if (count == scripts.get().size()) { // If the table is new, make a new script.
                                                 makeNewScript = true;
+                                                scriptsKey = String.valueOf(count);
                                             }
                                         } else {
+                                            scriptsKey = script.getKey();
                                             break;
                                         }
                                     }
                                 } else {
                                     makeNewScript = true;
+                                    scriptsKey = m.getI().get().toString();
                                 }
                                 if (makeNewScript) {
                                     makeANewScript(m, operation);
@@ -279,49 +212,23 @@ public class Main {
                                     ct++;
                                     LOG.debug(String.valueOf(jj.getValue()));
                                     try {
-                                        scripts.get().get(Integer.toString(count))
+                                        scripts.get().get(scriptsKey)
                                                 .getStdin().write(jj.getValue().getAsString());
                                         if (ct < Jobject_.entrySet().size()) {
-                                            scripts.get().get(Integer.toString(count)).getStdin().write("\t");
+                                            scripts.get().get(scriptsKey).getStdin().write("\t");
                                         }
                                     } catch (IOException e) {
-                                        // This could happen if there was an error outputting to the target table.
-                                        scripts.get().remove(Integer.toString(count));
-                                        makeANewScript(m, operation);
-                                        makeNewScript = true;
-                                        count = 0;
-                                        if (scripts.get() != null && scripts.get().values().size() > 0) {
-                                            for (SclScript script : scripts.get().values()) {
-
-                                                if (!script.getTable().equals(jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("db").getAsString() + "." + jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString() + props.getProperty(TARGET_NAME_POSTFIX_PROPERTY_NAME)) || !script.getFields().stream()
-                                                        .map(SclField::getName)
-                                                        .collect(Collectors.toList()).equals(m.getColumns())) {
-                                                    count++;
-                                                } else {
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                        try {
-                                            scripts.get().get(Integer.toString(count))
-                                                    .getStdin().write(jj.getValue().getAsString());
-                                            if (ct < Jobject_.entrySet().size()) {
-                                                scripts.get().get(Integer.toString(count)).getStdin().write("\t");
-                                            }
-                                        } catch (IOException e2) {
-                                            LOG.error("Could not write output to target table '{}'.", scripts.get().get(Integer.toString(count)).getTable());
-                                            break;
-                                        }
+                                        LOG.error("Could not write output to target table '{}'. Aborting...", scripts.get().get(scriptsKey).getTargetTableIdentifier());
+                                        terminateSortCLScript(scriptsKey);
                                     }
                                 }
 
                                 try {
-                                    scripts.get().get(Integer.toString(count)).getStdin().newLine();
-                                    scripts.get().get(Integer.toString(count)).getStdin().flush();
-                                } catch (IOException e) { // Pipe is closed; remove the broken script from script map.
-                                    // This could happen if there was an error outputting to the target table.
-                                    LOG.error("Could not flush output of script associated with table '{}'. Removing script...", scripts.get().get(Integer.toString(count)).getTable());
-                                    scripts.get().remove(Integer.toString(count));
+                                    scripts.get().get(scriptsKey).getStdin().newLine();
+                                    scripts.get().get(scriptsKey).getStdin().flush();
+                                } catch (IOException e) { // Pipe is closed. This could happen if there was an error outputting to the target table.
+                                    LOG.error("Could not flush output of replication job associated with table '{}'. Aborting...", scripts.get().get(scriptsKey).getSourceTableIdentifier());
+                                    terminateSortCLScript(scriptsKey);
                                 }
                                 if (makeNewScript) {
                                     m.getI().set(m.getI().get() + 1);
@@ -338,7 +245,7 @@ public class Main {
                                 }
                             }
                         } catch (NullPointerException ee) {
-                            ee.printStackTrace();
+                            terminateSortCLScript(scriptsKey);
                         }
                     }
                 })
@@ -361,6 +268,108 @@ public class Main {
         }
     }
 
+    // May allow for a more graceful termination.
+    private static void awaitTermination(ExecutorService executor) {
+        try {
+            while (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
+                LOG.debug("Debezium embedded engine running...");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    // Applying rules to columns based on data classes.
+    public static void classify(Set<Map.Entry<String, JsonElement>> values, DataClassLibrary dataClassLibrary, ArrayList<SclField> fields) {
+        int count = 0;
+        for (Map.Entry<String, JsonElement> value : values) {
+            for (Map.Entry<Map<String, Rule>, DataClassMatcher> entry : dataClassLibrary.dataMatcherMap.entrySet()) {
+                if (entry.getValue().getDataMatcher().isMatch(value.getValue().getAsString()) || entry.getValue().getNameMatcher().isMatch(fields.get(count).name)) {
+                    fields.get(count).expressionApplied = true;
+                    Rule rule = (Rule) entry.getKey().values().toArray()[0];
+                    fields.get(count).expression = rule.getRule();
+                    fields.get(count).ruleType = rule.getType();
+                    break;
+                }
+            }
+            count++;
+        }
+    }
+
+    // A change event has been detected that requires a new script to be generated and executed.
+    public static void makeANewScript(Main m, String operation) {
+        int loopTrack = 0;
+        File tempFile = null;
+        try {
+            tempFile = File.createTempFile("sortcl", ".tmp");
+        } catch (IOException e) {
+            LOG.error("An error occurred when creating a temporary file.");
+            e.printStackTrace();
+        }
+        assert tempFile != null;
+        tempFile.deleteOnExit();
+        try { // Generating the SortCL script dynamically.
+            FileWriter myWriter = new FileWriter(tempFile);
+            String dataTarget = m.getProps().getProperty(DATA_TARGET_PROPERTY_NAME);
+            String dataTargetProcessType = m.getProps().getProperty(DATA_TARGET_PROCESS_TYPE_PROPERTY_NAME);
+            String sourceTable = m.getJsonObject().get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString();
+            String sourceSchema = m.getJsonObject().get("payload").getAsJsonObject().get("source").getAsJsonObject().get("db").getAsString();
+            String targetSchema = m.getDataTargetSchema();
+            if (dataTarget != null && dataTargetProcessType != null) {
+                try {
+                    Path dataTargetPath = Paths.get(dataTarget);
+                    String DSN = m.getProps().getProperty("DSN");
+                    if (DSN != null) {
+                        scripts.get().put(m.getI().get().toString(), new SclScript(sourceTable, sourceSchema, targetSchema, m.getColumns(), operation, dataTargetProcessType, dataTargetPath, m.getPostfixTableName(), DSN));
+                    } else {
+                        scripts.get().put(m.getI().get().toString(), new SclScript(sourceTable, sourceSchema, m.getColumns(), operation, dataTargetProcessType, dataTargetPath, m.getPostfixTableName()));
+                    }
+                } catch (InvalidPathException invalidPathException) {
+                    LOG.error("Invalid target path for replication '{}'...", dataTarget);
+                }
+            } else {
+                scripts.get().put(m.getI().get().toString(), new SclScript(sourceTable, sourceSchema, targetSchema, m.getProps().getProperty("DSN"), m.getColumns(), operation, m.getPostfixTableName()));
+            }
+            scripts.get().get(m.getI().toString()).setKey(m.getI().toString());
+            for (JsonElement object : m.getFieldsArray()) {
+                String type = object.getAsJsonObject().get("type").getAsString();
+                JsonElement name = object.getAsJsonObject().get("name");
+                if (type == null) {
+                    loopTrack++;
+                    continue;
+                }
+                switch (type) {
+                    case "int32":
+                        if (name == null) {
+                            scripts.get().get(m.getI().get().toString()).getFields().get(loopTrack).setDataType("NUMERIC");
+                            scripts.get().get(m.getI().get().toString()).getFields().get(loopTrack).setPrecision(0);
+                        } else {
+                            scripts.get().get(m.getI().get().toString()).getFields().get(loopTrack).setDataType("ISO_DATE");
+                        }
+                        break;
+                    default:
+
+                }
+                loopTrack++;
+            }
+            classify(m.getAfterJsonPayload().entrySet(), m.getDataClassLibrary(), scripts.get().get(m.getI().get().toString()).getFields());
+            myWriter.write(sortCLScript(scripts.get().get(m.getI().get().toString()), m));
+            myWriter.close();
+            LOG.info("New SortCL replication job started for table '{}'.", scripts.get().get(m.getI().get().toString()).getSourceTableIdentifier());
+        } catch (IOException e) {
+            LOG.error("An error occurred when writing a SortCL script to a temporary file.");
+            System.exit(1);
+        }
+
+        try {
+            scripts.get().get(m.getI().toString()).setProcess(new ProcessBuilder("sortcl", "/SPEC=" + tempFile.getAbsolutePath()).redirectErrorStream(true).start());
+        } catch (IOException e) {
+            LOG.error("An error occurred when starting sortcl process.");
+            System.exit(1);
+        }
+    }
+
+    // Generating a SortCL script dynamically based on info from Debezium change events and any default rules associated with a data class.
     public static String sortCLScript(SclScript script, Main m) {
         StringBuilder sb = new StringBuilder();
         sb.append("/INFILE=stdin\n/PROCESS=CONCH\n");
@@ -402,7 +411,7 @@ public class Main {
             }
         }
         if (script.getDSN() != null) {
-            sb.append("/OUTFILE=\"").append(script.getTable()).append(";DSN=").append(script.getDSN()).append(";\"\n");
+            sb.append("/OUTFILE=\"").append(script.getTargetTableIdentifier()).append(";DSN=").append(script.getDSN()).append(";\"\n");
             sb.append("/PROCESS=ODBC\n");
             if (script.getTargetProcessType().equalsIgnoreCase("ODBC") && script.getOperation().equals("u")) { // Assuming that the first column is a primary key - I don't see any information from Debezium about what columns are keys.
                 sb.append("/UPDATE=(");
@@ -436,62 +445,25 @@ public class Main {
         return sb.toString();
     }
 
-    private static void awaitTermination(ExecutorService executor) {
+    // An error happened in sortcl execution. This prints the error output to the log and terminates the application to give the user a chance to review and correct the error.
+    // When the application is started again, Debezium will pick up at the same spot in the database log.
+    public static void terminateSortCLScript(String scriptsKey) {
+        StringBuilder errorMessage = new StringBuilder();
+        String line;
         try {
-            while (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
-                LOG.debug("Debezium embedded engine running...");
+            while ((line = scripts.get().get(scriptsKey).getStdout().readLine()) != null) {
+                errorMessage.append(line);
+                errorMessage.append("\n");
             }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+        } catch (IOException | NullPointerException e) {
+            LOG.warn("Could not retrieve SortCL output.");
         }
-    }
-
-    public static void classify(Set<Map.Entry<String, JsonElement>> values, DataClassLibrary dataClassLibrary, ArrayList<SclField> fields) {
-        int count = 0;
-        for (Map.Entry<String, JsonElement> value : values) {
-            for (Map.Entry<Map<String, Rule>, DataClassMatcher> entry : dataClassLibrary.dataMatcherMap.entrySet()) {
-                if (entry.getValue().getDataMatcher().isMatch(value.getValue().getAsString()) || entry.getValue().getNameMatcher().isMatch(fields.get(count).name)) {
-                    fields.get(count).expressionApplied = true;
-                    Rule rule = (Rule) entry.getKey().values().toArray()[0];
-                    fields.get(count).expression = rule.getRule();
-                    fields.get(count).ruleType = rule.getType();
-                    break;
-                }
-            }
-            count++;
+        if (scripts.get().get(scriptsKey) != null) {
+            LOG.error("SortCL replication job for table '{}' encountered an error:\n{}\nThe job is being terminated.\nCheck the .cserrlog for possible details on the cause of the error.", scripts.get().get(scriptsKey).getSourceTableIdentifier(), errorMessage);
+            scripts.get().get(scriptsKey).getProcess().destroyForcibly();
+            scripts.get().remove(scriptsKey);
         }
-    }
-
-    public ArrayList<String> getColumns() {
-        return columns;
-    }
-
-    public void setColumns(ArrayList<String> columns) {
-        this.columns = columns;
-    }
-
-    public Properties getProps() {
-        return props;
-    }
-
-    public void setProps(Properties props) {
-        this.props = props;
-    }
-
-    public JsonArray getFieldsArray() {
-        return fieldsArray;
-    }
-
-    public void setFieldsArray(JsonArray fieldsArray) {
-        this.fieldsArray = fieldsArray;
-    }
-
-    public JsonObject getJsonObject() {
-        return jsonObject;
-    }
-
-    public void setJsonObject(JsonObject jsonObject) {
-        this.jsonObject = jsonObject;
+        System.exit(1);
     }
 
     public JsonObject getAfterJsonPayload() {
@@ -502,20 +474,12 @@ public class Main {
         this.afterJsonPayload = afterJsonPayload;
     }
 
-    public String getDataTargetSeparator() {
-        return dataTargetSeparator;
+    public ArrayList<String> getColumns() {
+        return columns;
     }
 
-    public void setDataTargetSeparator(String dataTargetSeparator) {
-        this.dataTargetSeparator = dataTargetSeparator;
-    }
-
-    public RulesLibrary getRulesLibrary() {
-        return rulesLibrary;
-    }
-
-    public void setRulesLibrary(RulesLibrary rulesLibrary) {
-        this.rulesLibrary = rulesLibrary;
+    public void setColumns(ArrayList<String> columns) {
+        this.columns = columns;
     }
 
     public DataClassLibrary getDataClassLibrary() {
@@ -524,22 +488,6 @@ public class Main {
 
     public void setDataClassLibrary(DataClassLibrary dataClassLibrary) {
         this.dataClassLibrary = dataClassLibrary;
-    }
-
-    public AtomicReference<Integer> getI() {
-        return i;
-    }
-
-    public void setI(AtomicReference<Integer> i) {
-        this.i = i;
-    }
-
-    public String getPostfixTableName() {
-        return postfixTableName;
-    }
-
-    public void setPostfixTableName(String postfixTableName) {
-        this.postfixTableName = postfixTableName;
     }
 
     public String getDataTargetProcessType() {
@@ -557,5 +505,62 @@ public class Main {
     public void setDataTargetSchema(String dataTargetSchema) {
         this.dataTargetSchema = dataTargetSchema;
     }
+
+    public String getDataTargetSeparator() {
+        return dataTargetSeparator;
+    }
+
+    public void setDataTargetSeparator(String dataTargetSeparator) {
+        this.dataTargetSeparator = dataTargetSeparator;
+    }
+
+    public JsonArray getFieldsArray() {
+        return fieldsArray;
+    }
+
+    public void setFieldsArray(JsonArray fieldsArray) {
+        this.fieldsArray = fieldsArray;
+    }
+
+    public AtomicReference<Integer> getI() {
+        return i;
+    }
+
+    public void setI(AtomicReference<Integer> i) {
+        this.i = i;
+    }
+
+    public JsonObject getJsonObject() {
+        return jsonObject;
+    }
+
+    public void setJsonObject(JsonObject jsonObject) {
+        this.jsonObject = jsonObject;
+    }
+
+    public String getPostfixTableName() {
+        return postfixTableName;
+    }
+
+    public void setPostfixTableName(String postfixTableName) {
+        this.postfixTableName = postfixTableName;
+    }
+
+    public Properties getProps() {
+        return props;
+    }
+
+    public void setProps(Properties props) {
+        this.props = props;
+    }
+
+    public RulesLibrary getRulesLibrary() {
+        return rulesLibrary;
+    }
+
+    public void setRulesLibrary(RulesLibrary rulesLibrary) {
+        this.rulesLibrary = rulesLibrary;
+    }
+
 
 }

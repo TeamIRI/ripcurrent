@@ -15,28 +15,41 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 
 public class SclScript {
+    String sourceTableIdentifier;
+    String targetTableIdentifier;
     String table;
+    String key;
+    String schema;
     String DSN;
     String operation;
     String target;
     String targetProcessType;
+    String postfix;
     ArrayList<SclField> fields = new ArrayList<>();
     Process process;
     BufferedWriter stdin;
     BufferedReader stderr;
     BufferedReader stdout;
 
-    SclScript(String table, String DSN, ArrayList<String> fields, String operation, String postfixTableString) {
+    // Constructor for just targeting a database.
+    SclScript(String sourceTable, String sourceSchema, String targetSchema, String DSN, ArrayList<String> fields, String operation, String postfixTableString) {
         this.operation = operation;
-        this.table = table + postfixTableString;
+        if (targetSchema != null && targetSchema.length() > 0) {
+            this.targetTableIdentifier = targetSchema + "." + sourceTable + postfixTableString;
+        } else {
+            this.targetTableIdentifier = sourceTable + postfixTableString;
+        }
+        this.sourceTableIdentifier = sourceSchema + "." + sourceTable;
         this.DSN = DSN;
         for (String fieldName : fields) {
             this.fields.add(new SclField(fieldName));
         }
         this.targetProcessType = "ODBC";
+        this.postfix = postfixTableString;
     }
 
-    SclScript(String table, ArrayList<String> fields, String operation, String targetProcessType, Path target, String postfix) {
+    // Constructor for just targeting files.
+    SclScript(String sourceTable, String sourceSchema, ArrayList<String> fields, String operation, String targetProcessType, Path target, String postfix) {
         this.operation = operation;
         Path parent = target.getParent();
         Path file = target.getFileName();
@@ -48,15 +61,17 @@ public class SclScript {
         if (file != null) {
             fileString = file.toString();
         }
-        this.target = parentString + "/" + table + "-" + postfix + fileString;
-        this.table = table + postfix;
+        this.target = parentString + "/" + sourceSchema + "_" + sourceTable + "-" + postfix + fileString;
+        this.sourceTableIdentifier = sourceSchema + "." + sourceTable;
         this.targetProcessType = targetProcessType;
         for (String fieldName : fields) {
             this.fields.add(new SclField(fieldName));
         }
+        this.postfix = postfix;
     }
 
-    SclScript(String table, ArrayList<String> fields, String operation, String targetProcessType, Path target, String postfix, String DSN) {
+    // Constructor for targeting a database and files at the same time.
+    SclScript(String sourceTable, String sourceSchema, String targetSchema, ArrayList<String> fields, String operation, String targetProcessType, Path target, String postfix, String DSN) {
         this.operation = operation;
         Path parent = target.getParent();
         Path file = target.getFileName();
@@ -68,13 +83,19 @@ public class SclScript {
         if (file != null) {
             fileString = file.toString();
         }
-        this.target = parentString + "/" + table + "-" + postfix + fileString;
-        this.table = table + postfix;
+        if (targetSchema != null && targetSchema.length() > 0) {
+            this.targetTableIdentifier = targetSchema + "." + sourceTable + postfix;
+        } else {
+            this.targetTableIdentifier = sourceTable + postfix;
+        }
+        this.target = parentString + "/" + sourceSchema + "_" + sourceTable + "-" + postfix + fileString;
+        this.sourceTableIdentifier = sourceSchema + "." + sourceTable;
         this.targetProcessType = targetProcessType;
         for (String fieldName : fields) {
             this.fields.add(new SclField(fieldName));
         }
         this.DSN = DSN;
+        this.postfix = postfix;
     }
 
     public String getTarget() {
@@ -144,7 +165,47 @@ public class SclScript {
         return stdout;
     }
 
+    public String getSchema() {
+        return schema;
+    }
+
+    public void setSchema(String schema) {
+        this.schema = schema;
+    }
+
+    public String getTargetTableIdentifier() {
+        return targetTableIdentifier;
+    }
+
+    public void setTargetTableIdentifier(String targetTableIdentifier) {
+        this.targetTableIdentifier = targetTableIdentifier;
+    }
+
+    public String getSourceTableIdentifier() {
+        return sourceTableIdentifier;
+    }
+
+    public void setSourceTableIdentifier(String sourceTableIdentifier) {
+        this.sourceTableIdentifier = sourceTableIdentifier;
+    }
+
+    public String getPostfix() {
+        return postfix;
+    }
+
+    public void setPostfix(String postfix) {
+        this.postfix = postfix;
+    }
+
     public BufferedWriter getStdin() {
         return stdin;
+    }
+
+    public String getKey() {
+        return key;
+    }
+
+    public void setKey(String key) {
+        this.key = key;
     }
 }
