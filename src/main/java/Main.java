@@ -379,8 +379,8 @@ public class Main {
             sb.append("/FIELD=(").append(field.getName()).append(", TYPE=").append("ASCII").append(", POSITION=").append(count).append(", SEPARATOR=\"\\t\"").append(")\n");
         }
         sb.append("/STREAM\n");
-        if (script.getTarget() != null && script.getTargetProcessType() != null) {
-            sb.append("/OUTFILE=").append(script.getTarget()).append("\n").append("/PROCESS=").append(script.getTargetProcessType()).append("\n");
+        if (script.getTarget() != null) {
+            sb.append("/OUTFILE=").append(script.getTarget()).append("\n").append("/PROCESS=").append(script.getTargetProcessType() != null ? script.getTargetProcessType() : "RECORD").append("\n");
             if (script.getTargetProcessType().equalsIgnoreCase("ODBC") && script.getOperation().equals("u")) { // Assuming that the first column is a primary key - I don't see any information from Debezium about what columns are keys.
                 sb.append("/UPDATE=(");
                 sb.append(script.getFields().get(0).getName());
@@ -441,6 +441,9 @@ public class Main {
                 }
                 sb.append(")\n");
             }
+        }
+        if (script.getDSN() == null && script.getTarget() == null) {
+            sb.append("/OUTFILE=stdout\n");
         }
         return sb.toString();
     }
