@@ -13,6 +13,8 @@ import com.google.gson.*;
 import io.debezium.engine.ChangeEvent;
 import io.debezium.engine.DebeziumEngine;
 import io.debezium.engine.format.Json;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,8 +54,21 @@ public class Main {
     Properties props; // Java configuration properties.
     RulesLibrary rulesLibrary; // Ripcurrent will attempt to parse an existing IRI rules library when its path is specified as a Java property to the application.
 
+    private static void loadLog4jConfiguration() throws IOException {
+        Properties properties = new Properties();
+        properties.load(new FileInputStream(System.getProperty("log4j.configurationFile")));
+        LogManager.resetConfiguration();
+        PropertyConfigurator.configure(properties);
+    }
+
     // Main method; parse properties, data class library, rules library, and start Debezium engine.
     public static void main(String[] args) throws Exception {
+        try {
+            loadLog4jConfiguration();
+        } catch (IOException e) {
+            System.out.println("Error: Could not load log4j configuration.");
+            System.exit(2);
+        }
         String ripcurrentHome = null;
         try {
             ripcurrentHome = System.getProperty("APP_HOME");
