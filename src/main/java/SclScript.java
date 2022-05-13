@@ -63,7 +63,11 @@ public class SclScript {
         }
         this.target = parentString + "/" + sourceSchema + "_" + sourceTable + "-" + postfix + "-" + fileString;
         this.sourceTableIdentifier = sourceSchema + "." + sourceTable;
-        this.targetProcessType = targetProcessType;
+        if (targetProcessType != null) {
+            this.targetProcessType = targetProcessType;
+        } else {
+            this.targetProcessType = "RECORD";
+        }
         for (String fieldName : fields) {
             this.fields.add(new SclField(fieldName));
         }

@@ -144,7 +144,7 @@ public class Main {
                             if (jsonObject != null && jsonObject.get("payload") != null && jsonObject.get("payload").getAsJsonObject() != null && jsonObject.get("payload").getAsJsonObject().get("op") != null) {
                                 operation = jsonObject.get("payload").getAsJsonObject().get("op").getAsString();
                             }
-                            if (operation.equals("c") || operation.equals("u") || (operation.equals("d") && m.getDataTargetProcessType().equalsIgnoreCase("ODBC"))) { // Rows added or updated
+                            if (operation.equals("c") || operation.equals("u") && m.getDataTargetProcessType().equalsIgnoreCase("ODBC") || (operation.equals("d") && m.getDataTargetProcessType().equalsIgnoreCase("ODBC"))) { // Rows added or updated
                                 JsonObject Jobject_;
                                 if (operation.equals("d")) {
                                     Jobject_ = jsonObject.get("payload").getAsJsonObject().get("before").getAsJsonObject();
@@ -330,7 +330,7 @@ public class Main {
             String sourceTable = m.getJsonObject().get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString();
             String sourceSchema = m.getJsonObject().get("payload").getAsJsonObject().get("source").getAsJsonObject().get("db").getAsString();
             String targetSchema = m.getDataTargetSchema();
-            if (dataTarget != null && dataTargetProcessType != null) {
+            if (dataTarget != null) {
                 try {
                     Path dataTargetPath = Paths.get(dataTarget);
                     String DSN = m.getProps().getProperty("DSN");
