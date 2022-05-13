@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -36,6 +37,7 @@ public class Main {
     final static String DATA_TARGET_SCHEMA_PROPERTY_NAME = "dataTargetSchema";
     final static String DATA_TARGET_SEPARATOR_PROPERTY_NAME = "dataTargetSeparator";
     final static String RULES_LIBRARY_PROPERTY_NAME = "rulesLibraryPath";
+    final static String STRUCTURE_CHANGE_LOG_PROPERTY_NAME = "schemaChangeEventLog";
     final static String TARGET_NAME_POSTFIX_PROPERTY_NAME = "targetNamePostfix";
     private static final Logger LOG = LoggerFactory.getLogger(Main.class);
 
@@ -48,11 +50,13 @@ public class Main {
     String dataTargetSchema; // Schema for the data target (if using ODBC).
     String dataTargetSeparator; // Separator to place in the SortCL script for the data target.
     JsonArray fieldsArray;
+    FileOutputStream fileOutputStream;
     AtomicReference<Integer> i = new AtomicReference<>(); // A key to identify a specific SortCL job in the map of jobs.
     JsonObject jsonObject; // The Debezium change event is in JSON.
     String postfixTableName; // Target postfix string.
     Properties props; // Java configuration properties.
     RulesLibrary rulesLibrary; // Ripcurrent will attempt to parse an existing IRI rules library when its path is specified as a Java property to the application.
+    String structureChangeEventLogPath;
 
     private static void loadLog4jConfiguration() throws IOException {
         Properties properties = new Properties();
@@ -91,6 +95,8 @@ public class Main {
         } catch (IOException ex) {
             LOG.warn("Unable to load 'config.properties' from '{}'; Assuming all configuration properties have been set as system properties...", ripcurrentConfigPath);
         }
+        m.setStructureChangeEventLogPath(props.getProperty(STRUCTURE_CHANGE_LOG_PROPERTY_NAME) == null ? "schema_change_events.log" : props.getProperty(STRUCTURE_CHANGE_LOG_PROPERTY_NAME));
+        m.setFileOutputStream(new FileOutputStream(m.getStructureChangeEventLogPath()));
         String rulesLibraryPathString;
         String dataClassLibraryPathString;
         rulesLibraryPathString = props.getProperty(RULES_LIBRARY_PROPERTY_NAME);
@@ -234,7 +240,7 @@ public class Main {
                                         }
                                     } catch (IOException e) {
                                         LOG.error("Could not write output to target table '{}'. Aborting...", scripts.get().get(scriptsKey).getTargetTableIdentifier());
-                                        terminateSortCLScript(scriptsKey);
+                                        terminateSortCLScript(scriptsKey, m);
                                     }
                                 }
 
@@ -243,7 +249,7 @@ public class Main {
                                     scripts.get().get(scriptsKey).getStdin().flush();
                                 } catch (IOException e) { // Pipe is closed. This could happen if there was an error outputting to the target table.
                                     LOG.error("Could not flush output of replication job associated with table '{}'. Aborting...", scripts.get().get(scriptsKey).getSourceTableIdentifier());
-                                    terminateSortCLScript(scriptsKey);
+                                    terminateSortCLScript(scriptsKey, m);
                                 }
                                 if (makeNewScript) {
                                     m.getI().set(m.getI().get() + 1);
@@ -254,13 +260,15 @@ public class Main {
                                     String database = jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("db").getAsString();
                                     String table = jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString();
                                     String ddl = jsonObject.get("payload").getAsJsonObject().get("ddl").getAsString();
-                                    System.out.println(String.format("Database structure change event '%s' detected for table '%s.%s'.", ddl, database, table));
+                                    m.getFileOutputStream().write(String.format("Database structure change event '%s' detected for table '%s.%s'.\n", ddl, database, table).getBytes(StandardCharsets.UTF_8));
                                 } catch (Exception e) {
-                                    System.out.println("Database structure change event detected.");
+                                    m.getFileOutputStream().write("Database structure change event detected.\n".getBytes(StandardCharsets.UTF_8));
                                 }
                             }
-                        } catch (NullPointerException ee) {
-                            terminateSortCLScript(scriptsKey);
+                        } catch (NullPointerException npe) {
+                            terminateSortCLScript(scriptsKey, m);
+                        } catch (IOException IoError) {
+                            System.out.println(String.format("WARNING: Unable to write to database change event log '%s'.", m.getStructureChangeEventLogPath()));
                         }
                     }
                 })
@@ -279,6 +287,7 @@ public class Main {
             // the submitted task keeps running, only no more new ones can be added
             executor.shutdown();
             awaitTermination(executor);
+            closeSchemaChangeEventLog(m);
             LOG.info("Engine terminated");
         }
     }
@@ -373,6 +382,7 @@ public class Main {
             LOG.info("New SortCL replication job started for table '{}'.", scripts.get().get(m.getI().get().toString()).getSourceTableIdentifier());
         } catch (IOException e) {
             LOG.error("An error occurred when writing a SortCL script to a temporary file.");
+            closeSchemaChangeEventLog(m);
             System.exit(1);
         }
 
@@ -380,6 +390,7 @@ public class Main {
             scripts.get().get(m.getI().toString()).setProcess(new ProcessBuilder("sortcl", "/SPEC=" + tempFile.getAbsolutePath()).redirectErrorStream(true).start());
         } catch (IOException e) {
             LOG.error("An error occurred when starting sortcl process.");
+            closeSchemaChangeEventLog(m);
             System.exit(1);
         }
     }
@@ -463,9 +474,17 @@ public class Main {
         return sb.toString();
     }
 
+    public static void closeSchemaChangeEventLog(Main m) {
+        try {
+            m.getFileOutputStream().close();
+        } catch (IOException e) {
+            LOG.warn("Could not close schema change event log file '{}'.", m.getStructureChangeEventLogPath());
+        }
+    }
+
     // An error happened in sortcl execution. This prints the error output to the log and terminates the application to give the user a chance to review and correct the error.
     // When the application is started again, Debezium will pick up at the same spot in the database log.
-    public static void terminateSortCLScript(String scriptsKey) {
+    public static void terminateSortCLScript(String scriptsKey, Main m) {
         StringBuilder errorMessage = new StringBuilder();
         String line;
         try {
@@ -481,6 +500,7 @@ public class Main {
             scripts.get().get(scriptsKey).getProcess().destroyForcibly();
             scripts.get().remove(scriptsKey);
         }
+        closeSchemaChangeEventLog(m);
         System.exit(1);
     }
 
@@ -580,5 +600,19 @@ public class Main {
         this.rulesLibrary = rulesLibrary;
     }
 
+    public FileOutputStream getFileOutputStream() {
+        return fileOutputStream;
+    }
 
+    public void setFileOutputStream(FileOutputStream fileOutputStream) {
+        this.fileOutputStream = fileOutputStream;
+    }
+
+    public String getStructureChangeEventLogPath() {
+        return structureChangeEventLogPath;
+    }
+
+    public void setStructureChangeEventLogPath(String structureChangeEventLogPath) {
+        this.structureChangeEventLogPath = structureChangeEventLogPath;
+    }
 }
