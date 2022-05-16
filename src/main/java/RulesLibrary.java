@@ -53,8 +53,7 @@ public class RulesLibrary {
                 }
             }
         } catch (Exception e) {
-            LOG.warn("Could not parse rules library '{}'...", filePath);
-            e.printStackTrace();
+            LOG.warn("Could not parse rules library '{}'...", filePath, e);
         }
 
 

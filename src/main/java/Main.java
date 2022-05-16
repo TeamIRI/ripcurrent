@@ -280,8 +280,7 @@ public class Main {
                 try {
                     engine.close();
                 } catch (IOException e) {
-                    LOG.error("Unable to shutdown Debezium engine properly.");
-                    e.printStackTrace();
+                    LOG.error("Unable to shutdown Debezium engine properly.", e);
                 }
             }));
             // the submitted task keeps running, only no more new ones can be added
@@ -327,8 +326,7 @@ public class Main {
         try {
             tempFile = File.createTempFile("sortcl", ".tmp");
         } catch (IOException e) {
-            LOG.error("An error occurred when creating a temporary file.");
-            e.printStackTrace();
+            LOG.error("An error occurred when creating a temporary file.", e);
         }
         assert tempFile != null;
         tempFile.deleteOnExit();

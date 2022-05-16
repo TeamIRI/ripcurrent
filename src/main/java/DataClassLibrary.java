@@ -72,8 +72,7 @@ public class DataClassLibrary {
                 }
             }
         } catch (Exception e) {
-            LOG.warn("Could not parse data class library '{}'...", filePath);
-            e.printStackTrace();
+            LOG.warn("Could not parse data class library '{}'...", filePath, e);
         }
     }
 
