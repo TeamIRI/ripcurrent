@@ -231,10 +231,16 @@ public class Main {
                                 int ct = 0;
                                 for (Map.Entry<String, JsonElement> jj : Jobject_.entrySet()) {
                                     ct++;
-                                    LOG.debug(String.valueOf(jj.getValue()));
+                                    String val;
+                                    try {
+                                        val = jj.getValue().getAsString();
+                                    } catch (UnsupportedOperationException unsupportedOperationException) {
+                                        val = "";
+                                    }
+                                    LOG.debug(val);
                                     try {
                                         scripts.get().get(scriptsKey)
-                                                .getStdin().write(jj.getValue().getAsString());
+                                                .getStdin().write(val);
                                         if (ct < Jobject_.entrySet().size()) {
                                             scripts.get().get(scriptsKey).getStdin().write("\t");
                                         }
