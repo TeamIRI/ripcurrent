@@ -96,7 +96,7 @@ public class Main {
             LOG.warn("Unable to load 'config.properties' from '{}'; Assuming all configuration properties have been set as system properties...", ripcurrentConfigPath);
         }
         m.setStructureChangeEventLogPath(props.getProperty(STRUCTURE_CHANGE_LOG_PROPERTY_NAME) == null ? "schema_change_events.log" : props.getProperty(STRUCTURE_CHANGE_LOG_PROPERTY_NAME));
-        m.setFileOutputStream(new FileOutputStream(m.getStructureChangeEventLogPath()));
+        m.setFileOutputStream(new FileOutputStream(m.getStructureChangeEventLogPath(), true));
         String rulesLibraryPathString;
         String dataClassLibraryPathString;
         rulesLibraryPathString = props.getProperty(RULES_LIBRARY_PROPERTY_NAME);
