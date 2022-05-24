@@ -399,6 +399,11 @@ public class Main {
         }
     }
 
+    // Convert actual tab value to \t
+    public static String escapeTab(String separator) {
+        return separator.replace("\t", "\\t");
+    }
+
     // Generating a SortCL script dynamically based on info from Debezium change events and any default rules associated with a data class.
     public static String sortCLScript(SclScript script, Main m) {
         StringBuilder sb = new StringBuilder();
@@ -427,12 +432,12 @@ public class Main {
                 count++;
                 if (field.expressionApplied) {
                     if (field.getRuleType() != null && field.getRuleType().equalsIgnoreCase("set")) { // Assuming the set file ends with extension .set - maybe think of a better conditional test later.
-                        sb.append("/FIELD=(ALTERED_").append(field.getName()).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", SEPARATOR=\"").append(m.getDataTargetSeparator()).append("\", ").append("SET=").append(field.getExpression());
+                        sb.append("/FIELD=(ALTERED_").append(field.getName()).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", SEPARATOR=\"").append(escapeTab(m.getDataTargetSeparator())).append("\", ").append("SET=").append(field.getExpression());
                     } else {
-                        sb.append("/FIELD=(ALTERED_").append(field.getName()).append("=").append(field.getExpression().replace("${FIELDNAME}", field.getName())).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", ").append("SEPARATOR=\"").append(m.getDataTargetSeparator()).append("\"");
+                        sb.append("/FIELD=(ALTERED_").append(field.getName()).append("=").append(field.getExpression().replace("${FIELDNAME}", field.getName())).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", ").append("SEPARATOR=\"").append(escapeTab(m.getDataTargetSeparator())).append("\"");
                     }
                 } else {
-                    sb.append("/FIELD=(").append(field.getName()).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ").append("SEPARATOR=\"").append(m.getDataTargetSeparator()).append("\"");
+                    sb.append("/FIELD=(").append(field.getName()).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ").append("SEPARATOR=\"").append(escapeTab(m.getDataTargetSeparator())).append("\"");
                 }
                 if (field.getPrecision() != -1) {
                     sb.append(", PRECISION=").append(field.getPrecision());
@@ -459,12 +464,12 @@ public class Main {
                 count++;
                 if (field.expressionApplied) {
                     if (field.getRuleType() != null && field.getRuleType().equalsIgnoreCase("set")) { // Assuming the set file ends with extension .set - maybe think of a better conditional test later.
-                        sb.append("/FIELD=(ALTERED_").append(field.getName()).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", SEPARATOR=\"").append(m.getDataTargetSeparator()).append("\", ").append("SET=").append(field.getExpression());
+                        sb.append("/FIELD=(ALTERED_").append(field.getName()).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", SEPARATOR=\"").append(escapeTab(m.getDataTargetSeparator())).append("\", ").append("SET=").append(field.getExpression());
                     } else {
-                        sb.append("/FIELD=(ALTERED_").append(field.getName()).append("=").append(field.getExpression().replace("${FIELDNAME}", field.getName())).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", ").append("SEPARATOR=\"").append(m.getDataTargetSeparator()).append("\"");
+                        sb.append("/FIELD=(ALTERED_").append(field.getName()).append("=").append(field.getExpression().replace("${FIELDNAME}", field.getName())).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", ").append("SEPARATOR=\"").append(escapeTab(m.getDataTargetSeparator())).append("\"");
                     }
                 } else {
-                    sb.append("/FIELD=(").append(field.getName()).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ").append("SEPARATOR=\"").append(m.getDataTargetSeparator()).append("\"");
+                    sb.append("/FIELD=(").append(field.getName()).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ").append("SEPARATOR=\"").append(escapeTab(m.getDataTargetSeparator())).append("\"");
                 }
                 if (field.getPrecision() != -1) {
                     sb.append(", PRECISION=").append(field.getPrecision());
