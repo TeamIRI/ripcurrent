@@ -125,6 +125,9 @@ public class Main {
         if (dataClassLibraryPathString == null) {
             LOG.warn("{} property not set. Please set this property to the absolute path of an IRI data class library to classify data.", DATA_CLASS_LIBRARY_PROPERTY_NAME);
         }
+        // Set a few default properties - SortCL needs string representations of values.
+        props.setProperty("decimal.handling.mode", "string");
+        props.setProperty("binary.handling.mode", "base64");
         RulesLibrary rulesLibrary = new RulesLibrary(props.getProperty(RULES_LIBRARY_PROPERTY_NAME));
         DataClassLibrary dataClassLibrary = new DataClassLibrary(props.getProperty(DATA_CLASS_LIBRARY_PROPERTY_NAME), rulesLibrary.getRules());
         m.setDataClassLibrary(dataClassLibrary);
