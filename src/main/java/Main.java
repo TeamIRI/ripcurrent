@@ -57,6 +57,7 @@ public class Main {
     Properties props; // Java configuration properties.
     RulesLibrary rulesLibrary; // Ripcurrent will attempt to parse an existing IRI rules library when its path is specified as a Java property to the application.
     String structureChangeEventLogPath;
+    String DSN;
 
     private static void loadLog4jConfiguration() throws IOException {
         Properties properties = new Properties();
@@ -125,7 +126,7 @@ public class Main {
         if (dataClassLibraryPathString == null) {
             LOG.warn("{} property not set. Please set this property to the absolute path of an IRI data class library to classify data.", DATA_CLASS_LIBRARY_PROPERTY_NAME);
         }
-        // Set a few default properties - SortCL needs string representations of values.
+        // Set a few default properties - SortCL is expecting string representations of values.
         props.setProperty("decimal.handling.mode", "string");
         props.setProperty("binary.handling.mode", "base64");
         RulesLibrary rulesLibrary = new RulesLibrary(props.getProperty(RULES_LIBRARY_PROPERTY_NAME));
@@ -140,6 +141,7 @@ public class Main {
         } else {
             m.setDataTargetProcessType(dataTargetProcessTypePropertyValue);
         }
+        m.setDSN(m.getProps().getProperty("DSN"));
         scripts.set(new HashMap<>());
         try (DebeziumEngine<ChangeEvent<String, String>> engine = DebeziumEngine.create(Json.class)
                 .using(props)
@@ -153,7 +155,7 @@ public class Main {
                             if (jsonObject != null && jsonObject.get("payload") != null && jsonObject.get("payload").getAsJsonObject() != null && jsonObject.get("payload").getAsJsonObject().get("op") != null) {
                                 operation = jsonObject.get("payload").getAsJsonObject().get("op").getAsString();
                             }
-                            if (operation.equals("c") || operation.equals("u") && m.getDataTargetProcessType().equalsIgnoreCase("ODBC") || (operation.equals("d") && m.getDataTargetProcessType().equalsIgnoreCase("ODBC"))) { // Rows added or updated
+                            if (operation.equals("c") || operation.equals("u") && m.getDSN() != null || (operation.equals("d") && m.getDSN() != null)) { // Rows added or updated
                                 JsonObject Jobject_;
                                 if (operation.equals("d")) {
                                     Jobject_ = jsonObject.get("payload").getAsJsonObject().get("before").getAsJsonObject();
@@ -271,13 +273,19 @@ public class Main {
                                     String ddl = jsonObject.get("payload").getAsJsonObject().get("ddl").getAsString();
                                     m.getFileOutputStream().write(String.format("Database structure change event '%s' detected for table '%s.%s'.\n", ddl, database, table).getBytes(StandardCharsets.UTF_8));
                                 } catch (Exception e) {
-                                    m.getFileOutputStream().write("Database structure change event detected.\n".getBytes(StandardCharsets.UTF_8));
+                                    try {
+                                        m.getFileOutputStream().write("Database structure change event detected.\n".getBytes(StandardCharsets.UTF_8));
+
+                                    } catch (IOException IoError) {
+                                        System.out.println(String.format("WARNING: Unable to write to database change event log '%s'.", m.getStructureChangeEventLogPath()));
+                                    }
                                 }
                             }
                         } catch (NullPointerException npe) {
                             terminateSortCLScript(scriptsKey, m);
-                        } catch (IOException IoError) {
-                            System.out.println(String.format("WARNING: Unable to write to database change event log '%s'.", m.getStructureChangeEventLogPath()));
+                        } catch (Exception unexpectedException) {
+                            LOG.error("Unexpected exception encountered: '{}'. Terminating...", unexpectedException.getMessage());
+                            terminateSortCLScript(scriptsKey, m);
                         }
                     }
                 })
@@ -288,6 +296,9 @@ public class Main {
                 LOG.info("Requesting embedded engine to shut down");
                 try {
                     engine.close();
+                    terminateSortCLScript("0", m);
+                    closeSchemaChangeEventLog(m);
+                    LOG.info("Engine terminated");
                 } catch (IOException e) {
                     LOG.error("Unable to shutdown Debezium engine properly.", e);
                 }
@@ -295,8 +306,6 @@ public class Main {
             // the submitted task keeps running, only no more new ones can be added
             executor.shutdown();
             awaitTermination(executor);
-            closeSchemaChangeEventLog(m);
-            LOG.info("Engine terminated");
         }
     }
 
@@ -349,7 +358,7 @@ public class Main {
             if (dataTarget != null) {
                 try {
                     Path dataTargetPath = Paths.get(dataTarget);
-                    String DSN = m.getProps().getProperty("DSN");
+                    String DSN = m.getDSN();
                     if (DSN != null) {
                         scripts.get().put(m.getI().get().toString(), new SclScript(sourceTable, sourceSchema, targetSchema, m.getColumns(), operation, dataTargetProcessType, dataTargetPath, m.getPostfixTableName(), DSN));
                     } else {
@@ -359,7 +368,7 @@ public class Main {
                     LOG.error("Invalid target path for replication '{}'...", dataTarget);
                 }
             } else {
-                scripts.get().put(m.getI().get().toString(), new SclScript(sourceTable, sourceSchema, targetSchema, m.getProps().getProperty("DSN"), m.getColumns(), operation, m.getPostfixTableName()));
+                scripts.get().put(m.getI().get().toString(), new SclScript(sourceTable, sourceSchema, targetSchema, m.getDSN(), m.getColumns(), operation, m.getPostfixTableName()));
             }
             scripts.get().get(m.getI().toString()).setKey(m.getI().toString());
             for (JsonElement object : m.getFieldsArray()) {
@@ -417,19 +426,9 @@ public class Main {
             sb.append("/FIELD=(").append(field.getName()).append(", TYPE=").append("ASCII").append(", POSITION=").append(count).append(", SEPARATOR=\"\\t\"").append(")\n");
         }
         sb.append("/STREAM\n");
-        if (script.getTarget() != null) {
+        if (script.getTarget() != null && script.getOperation().equals("c")) {
             sb.append("/OUTFILE=").append(script.getTarget()).append("\n").append("/PROCESS=").append(script.getTargetProcessType() != null ? script.getTargetProcessType() : "RECORD").append("\n");
-            if (script.getTargetProcessType().equalsIgnoreCase("ODBC") && script.getOperation().equals("u")) { // Assuming that the first column is a primary key - I don't see any information from Debezium about what columns are keys.
-                sb.append("/UPDATE=(");
-                sb.append(script.getFields().get(0).getName());
-                sb.append(")\n");
-            } else if (script.getTargetProcessType().equalsIgnoreCase("ODBC") && script.getOperation().equals("d")) {
-                sb.append("/DELETE=(");
-                sb.append(script.getFields().get(0).getName());
-                sb.append(")\n");
-            } else {
-                sb.append("/APPEND\n");
-            }
+            sb.append("/APPEND\n");
             count = 0;
             for (SclField field : script.getFields()) {
                 count++;
@@ -451,11 +450,11 @@ public class Main {
         if (script.getDSN() != null) {
             sb.append("/OUTFILE=\"").append(script.getTargetTableIdentifier()).append(";DSN=").append(script.getDSN()).append(";\"\n");
             sb.append("/PROCESS=ODBC\n");
-            if (script.getTargetProcessType().equalsIgnoreCase("ODBC") && script.getOperation().equals("u")) { // Assuming that the first column is a primary key - I don't see any information from Debezium about what columns are keys.
+            if (script.getOperation().equals("u")) { // Assuming that the first column is a primary key - I don't see any information from Debezium about what columns are keys.
                 sb.append("/UPDATE=(");
                 sb.append(script.getFields().get(0).getName());
                 sb.append(")\n");
-            } else if (script.getTargetProcessType().equalsIgnoreCase("ODBC") && script.getOperation().equals("d")) {
+            } else if (script.getOperation().equals("d")) {
                 sb.append("/DELETE=(");
                 sb.append(script.getFields().get(0).getName());
                 sb.append(")\n");
@@ -466,7 +465,7 @@ public class Main {
             for (SclField field : script.getFields()) {
                 count++;
                 if (field.expressionApplied) {
-                    if (field.getRuleType() != null && field.getRuleType().equalsIgnoreCase("set")) { // Assuming the set file ends with extension .set - maybe think of a better conditional test later.
+                    if (field.getRuleType() != null && field.getRuleType().equalsIgnoreCase("set")) {
                         sb.append("/FIELD=(ALTERED_").append(field.getName()).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", SEPARATOR=\"").append(escapeTab(m.getDataTargetSeparator())).append("\", ").append("SET=").append(field.getExpression());
                     } else {
                         sb.append("/FIELD=(ALTERED_").append(field.getName()).append("=").append(field.getExpression().replace("${FIELDNAME}", field.getName())).append(", TYPE=").append(field.getDataType()).append(", POSITION=").append(count).append(", ODEF=\"").append(field.getName()).append("\", ").append("SEPARATOR=\"").append(escapeTab(m.getDataTargetSeparator())).append("\"");
@@ -509,8 +508,10 @@ public class Main {
         }
         if (scripts.get().get(scriptsKey) != null) {
             LOG.error("SortCL replication job for table '{}' encountered an error:\n{}\nThe job is being terminated.\nCheck the .cserrlog for possible details on the cause of the error.", scripts.get().get(scriptsKey).getSourceTableIdentifier(), errorMessage);
-            scripts.get().get(scriptsKey).getProcess().destroyForcibly();
-            scripts.get().remove(scriptsKey);
+            for (Map.Entry<String, SclScript> script : scripts.get().entrySet()) {
+                scripts.get().get(script.getKey()).getProcess().destroyForcibly();
+                scripts.get().remove(scriptsKey);
+            }
         }
         closeSchemaChangeEventLog(m);
         System.exit(1);
@@ -626,5 +627,13 @@ public class Main {
 
     public void setStructureChangeEventLogPath(String structureChangeEventLogPath) {
         this.structureChangeEventLogPath = structureChangeEventLogPath;
+    }
+
+    public String getDSN() {
+        return DSN;
+    }
+
+    public void setDSN(String DSN) {
+        this.DSN = DSN;
     }
 }
