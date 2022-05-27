@@ -23,7 +23,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -41,7 +43,7 @@ public class Main {
     final static String TARGET_NAME_POSTFIX_PROPERTY_NAME = "targetNamePostfix";
     private static final Logger LOG = LoggerFactory.getLogger(Main.class);
 
-    static AtomicReference<HashMap<String, SclScript>> scripts = new AtomicReference<>(); // Holds references to current SortCL jobs.
+    static AtomicReference<ConcurrentHashMap<String, SclScript>> scripts = new AtomicReference<>(); // Holds references to current SortCL jobs.
 
     JsonObject afterJsonPayload;
     ArrayList<String> columns = new ArrayList<>(); // A list of column names for the specific source table.
@@ -142,13 +144,21 @@ public class Main {
             m.setDataTargetProcessType(dataTargetProcessTypePropertyValue);
         }
         m.setDSN(m.getProps().getProperty("DSN"));
-        scripts.set(new HashMap<>());
+        scripts.set(new ConcurrentHashMap<>());
         try (DebeziumEngine<ChangeEvent<String, String>> engine = DebeziumEngine.create(Json.class)
                 .using(props)
                 .notifying(record -> {
                     if (record.value() != null) {
                         String scriptsKey = null;
                         try {
+                            String keyField = null;
+                            if (record.key() != null) {
+                                try {
+                                    keyField = JsonParser.parseString(record.key()).getAsJsonObject().get("Schema").getAsJsonObject().get("fields").getAsJsonArray().get(0).getAsJsonObject().get("field").getAsString();
+                                } catch (JsonParseException | IllegalStateException | IndexOutOfBoundsException e) {
+                                    LOG.warn("Cannot parse primary key.");
+                                }
+                            }
                             JsonObject jsonObject = JsonParser.parseString(record.value()).getAsJsonObject();
                             m.setJsonObject(jsonObject);
                             String operation = "";
@@ -231,7 +241,7 @@ public class Main {
                                     scriptsKey = m.getI().get().toString();
                                 }
                                 if (makeNewScript) {
-                                    makeANewScript(m, operation);
+                                    makeANewScript(m, operation, keyField);
                                 }
                                 int ct = 0;
                                 for (Map.Entry<String, JsonElement> jj : Jobject_.entrySet()) {
@@ -244,8 +254,7 @@ public class Main {
                                     }
                                     LOG.debug(val);
                                     try {
-                                        scripts.get().get(scriptsKey)
-                                                .getStdin().write(val);
+                                        scripts.get().get(scriptsKey).getStdin().write(val);
                                         if (ct < Jobject_.entrySet().size()) {
                                             scripts.get().get(scriptsKey).getStdin().write("\t");
                                         }
@@ -271,13 +280,16 @@ public class Main {
                                     String database = jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("db").getAsString();
                                     String table = jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString();
                                     String ddl = jsonObject.get("payload").getAsJsonObject().get("ddl").getAsString();
-                                    m.getFileOutputStream().write(String.format("Database structure change event '%s' detected for table '%s.%s'.\n", ddl, database, table).getBytes(StandardCharsets.UTF_8));
+                                    String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new java.util.Date());
+                                    m.getFileOutputStream().write(String.format("%s: Database structure change event '%s' detected for table '%s.%s'.\n", timeStamp, ddl, database, table).getBytes(StandardCharsets.UTF_8));
                                 } catch (Exception e) {
                                     try {
-                                        m.getFileOutputStream().write("Database structure change event detected.\n".getBytes(StandardCharsets.UTF_8));
+                                        String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new java.util.Date());
+                                        m.getFileOutputStream().write(String.format("%s: Database structure change event detected.\n", timeStamp).getBytes(StandardCharsets.UTF_8));
 
                                     } catch (IOException IoError) {
-                                        System.out.println(String.format("WARNING: Unable to write to database change event log '%s'.", m.getStructureChangeEventLogPath()));
+                                        String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new java.util.Date());
+                                        System.out.println(String.format("%s: WARNING: Unable to write to database change event log '%s'.", timeStamp, m.getStructureChangeEventLogPath()));
                                     }
                                 }
                             }
@@ -338,7 +350,7 @@ public class Main {
     }
 
     // A change event has been detected that requires a new script to be generated and executed.
-    public static void makeANewScript(Main m, String operation) {
+    public static void makeANewScript(Main m, String operation, String keyField) {
         int loopTrack = 0;
         File tempFile = null;
         try {
@@ -393,7 +405,7 @@ public class Main {
                 loopTrack++;
             }
             classify(m.getAfterJsonPayload().entrySet(), m.getDataClassLibrary(), scripts.get().get(m.getI().get().toString()).getFields());
-            myWriter.write(sortCLScript(scripts.get().get(m.getI().get().toString()), m));
+            myWriter.write(sortCLScript(scripts.get().get(m.getI().get().toString()), m, keyField));
             myWriter.close();
             LOG.info("New SortCL replication job started for table '{}'.", scripts.get().get(m.getI().get().toString()).getSourceTableIdentifier());
         } catch (IOException e) {
@@ -417,7 +429,7 @@ public class Main {
     }
 
     // Generating a SortCL script dynamically based on info from Debezium change events and any default rules associated with a data class.
-    public static String sortCLScript(SclScript script, Main m) {
+    public static String sortCLScript(SclScript script, Main m, String keyField) {
         StringBuilder sb = new StringBuilder();
         sb.append("/INFILE=stdin\n/PROCESS=CONCH\n");
         int count = 0;
@@ -452,11 +464,19 @@ public class Main {
             sb.append("/PROCESS=ODBC\n");
             if (script.getOperation().equals("u")) { // Assuming that the first column is a primary key - I don't see any information from Debezium about what columns are keys.
                 sb.append("/UPDATE=(");
-                sb.append(script.getFields().get(0).getName());
+                if (keyField != null) {
+                    sb.append(keyField);
+                } else {
+                    sb.append(script.getFields().get(0).getName());
+                }
                 sb.append(")\n");
             } else if (script.getOperation().equals("d")) {
                 sb.append("/DELETE=(");
-                sb.append(script.getFields().get(0).getName());
+                if (keyField != null) {
+                    sb.append(keyField);
+                } else {
+                    sb.append(script.getFields().get(0).getName());
+                }
                 sb.append(")\n");
             } else {
                 sb.append("/APPEND\n");
@@ -509,7 +529,22 @@ public class Main {
         if (scripts.get().get(scriptsKey) != null) {
             LOG.error("SortCL replication job for table '{}' encountered an error:\n{}\nThe job is being terminated.\nCheck the .cserrlog for possible details on the cause of the error.", scripts.get().get(scriptsKey).getSourceTableIdentifier(), errorMessage);
             for (Map.Entry<String, SclScript> script : scripts.get().entrySet()) {
-                scripts.get().get(script.getKey()).getProcess().destroyForcibly();
+                try {
+                    scripts.get().get(script.getKey()).getStdin().close();
+                } catch (IOException e) {
+                    LOG.warn("Failed to close the stdin to local CoSort job: {}.", e.getMessage());
+                }
+                try {
+                    scripts.get().get(script.getKey()).getStderr().close();
+                } catch (IOException e) {
+                    LOG.warn("Failed to close the stderr to local CoSort job: {}.", e.getMessage());
+                }
+                try {
+                    scripts.get().get(script.getKey()).getStdout().close();
+                } catch (IOException e) {
+                    LOG.warn("Failed to close the stdout to local CoSort job: {}.", e.getMessage());
+                }
+                scripts.get().get(script.getKey()).getProcess().destroy();
                 scripts.get().remove(scriptsKey);
             }
         }
