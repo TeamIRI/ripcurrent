@@ -68,6 +68,17 @@ public class Main {
         PropertyConfigurator.configure(properties);
     }
 
+    private static String getSchema(Main m, JsonObject source) {
+        switch (m.getProps().getProperty("connector.class")) {
+            case "io.debezium.connector.mysql.MySqlConnector":
+                return source.get("db").getAsString();
+            case "io.debezium.connector.vitess.VitessConnector":
+                return source.get("keyspace").getAsString();
+            default:
+                return source.get("schema").getAsString();
+        }
+    }
+
     // Main method; parse properties, data class library, rules library, and start Debezium engine.
     public static void main(String[] args) throws Exception {
         try {
@@ -223,7 +234,7 @@ public class Main {
                                 if (scripts.get() != null && scripts.get().values().size() > 0) {
                                     for (SclScript script : scripts.get().values()) {
 
-                                        if (!script.getOperation().equals(operation) || !script.getSourceTableIdentifier().equals(jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("db").getAsString() + "." + jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString()) || !script.getFields().stream()
+                                        if (!script.getOperation().equals(operation) || !script.getSourceTableIdentifier().equals(getSchema(m, jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject()) + "." + jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString()) || !script.getFields().stream()
                                                 .map(SclField::getName)
                                                 .collect(Collectors.toList()).equals(m.getColumns())) {
                                             count++;
@@ -277,7 +288,7 @@ public class Main {
                                 m.getColumns().clear();
                             } else if (operation.equals("")) {
                                 try {
-                                    String database = jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("db").getAsString();
+                                    String database = getSchema(m, jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject());
                                     String table = jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString();
                                     String ddl = jsonObject.get("payload").getAsJsonObject().get("ddl").getAsString();
                                     String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new java.util.Date());
@@ -365,7 +376,7 @@ public class Main {
             String dataTarget = m.getProps().getProperty(DATA_TARGET_PROPERTY_NAME);
             String dataTargetProcessType = m.getProps().getProperty(DATA_TARGET_PROCESS_TYPE_PROPERTY_NAME);
             String sourceTable = m.getJsonObject().get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString();
-            String sourceSchema = m.getJsonObject().get("payload").getAsJsonObject().get("source").getAsJsonObject().get("db").getAsString();
+            String sourceSchema = getSchema(m, m.getJsonObject().get("payload").getAsJsonObject().get("source").getAsJsonObject());
             String targetSchema = m.getDataTargetSchema();
             if (dataTarget != null) {
                 try {
