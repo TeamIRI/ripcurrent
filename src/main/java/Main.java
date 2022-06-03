@@ -151,14 +151,6 @@ public class Main {
                     if (record.value() != null) {
                         String scriptsKey = null;
                         try {
-                            String keyField = null;
-                            if (record.key() != null) {
-                                try {
-                                    keyField = JsonParser.parseString(record.key()).getAsJsonObject().get("Schema").getAsJsonObject().get("fields").getAsJsonArray().get(0).getAsJsonObject().get("field").getAsString();
-                                } catch (JsonParseException | IllegalStateException | IndexOutOfBoundsException e) {
-                                    LOG.warn("Cannot parse primary key.");
-                                }
-                            }
                             JsonObject jsonObject = JsonParser.parseString(record.value()).getAsJsonObject();
                             m.setJsonObject(jsonObject);
                             String operation = "";
@@ -176,6 +168,14 @@ public class Main {
                                 m.getColumns().addAll(Jobject_.keySet());
                                 int count = 0;
                                 boolean makeNewScript = Boolean.FALSE;
+                                String keyField = null;
+                                if (record.key() != null) {
+                                    try {
+                                        keyField = JsonParser.parseString(record.key()).getAsJsonObject().get("Schema").getAsJsonObject().get("fields").getAsJsonArray().get(0).getAsJsonObject().get("field").getAsString();
+                                    } catch (JsonParseException | IllegalStateException | IndexOutOfBoundsException e) {
+                                        LOG.warn("Cannot parse primary key.");
+                                    }
+                                }
                                 JsonArray fieldsArray = jsonObject.get("schema").getAsJsonObject().get("fields").getAsJsonArray().get(0).getAsJsonObject().get("fields").getAsJsonArray();
                                 m.setFieldsArray(fieldsArray);
                                 int loopTrack = 0;
