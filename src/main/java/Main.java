@@ -183,8 +183,8 @@ public class Main {
                                 if (record.key() != null) {
                                     try {
                                         keyField = JsonParser.parseString(record.key()).getAsJsonObject().get("Schema").getAsJsonObject().get("fields").getAsJsonArray().get(0).getAsJsonObject().get("field").getAsString();
-                                    } catch (JsonParseException | IllegalStateException | IndexOutOfBoundsException e) {
-                                        LOG.warn("Cannot parse primary key.");
+                                    } catch (JsonParseException | IllegalStateException | NullPointerException | IndexOutOfBoundsException e) {
+                                        LOG.debug("Cannot parse primary key.");
                                     }
                                 }
                                 JsonArray fieldsArray = jsonObject.get("schema").getAsJsonObject().get("fields").getAsJsonArray().get(0).getAsJsonObject().get("fields").getAsJsonArray();
@@ -230,7 +230,11 @@ public class Main {
                                     }
                                     loopTrack++;
                                 }
-                                scriptsKey = "0";
+                                if (scripts.get() != null) {
+                                    scriptsKey = String.valueOf(scripts.get().values().size() - 1);
+                                } else {
+                                    scriptsKey = "0";
+                                }
                                 if (scripts.get() != null && scripts.get().values().size() > 0) {
                                     for (SclScript script : scripts.get().values()) {
 

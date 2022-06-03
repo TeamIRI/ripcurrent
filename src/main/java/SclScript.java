@@ -37,7 +37,7 @@ public class SclScript {
         if (targetSchema != null && targetSchema.length() > 0) {
             this.targetTableIdentifier = targetSchema + "." + sourceTable + postfixTableString;
         } else {
-            this.targetTableIdentifier = sourceTable + postfixTableString;
+            this.targetTableIdentifier = sourceSchema + "." + sourceTable + postfixTableString;
         }
         this.sourceTableIdentifier = sourceSchema + "." + sourceTable;
         this.DSN = DSN;
@@ -90,7 +90,7 @@ public class SclScript {
         if (targetSchema != null && targetSchema.length() > 0) {
             this.targetTableIdentifier = targetSchema + "." + sourceTable + postfix;
         } else {
-            this.targetTableIdentifier = sourceTable + postfix;
+            this.targetTableIdentifier = sourceSchema + "." + sourceTable + postfix;
         }
         this.target = parentString + "/" + sourceSchema + "_" + sourceTable + "-" + postfix + "-" + fileString;
         this.sourceTableIdentifier = sourceSchema + "." + sourceTable;
