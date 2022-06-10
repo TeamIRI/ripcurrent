@@ -294,7 +294,7 @@ public class Main {
                                 try {
                                     String database = getSchema(m, jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject());
                                     String table = jsonObject.get("payload").getAsJsonObject().get("source").getAsJsonObject().get("table").getAsString();
-                                    String ddl = jsonObject.get("payload").getAsJsonObject().get("ddl").getAsString();
+                                    String ddl = jsonObject.get("payload").getAsJsonObject().get("ddl").getAsString().replaceAll("\\R", " ");
                                     String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new java.util.Date());
                                     m.getFileOutputStream().write(String.format("%s: Database structure change event '%s' detected for table '%s.%s'.\n", timeStamp, ddl, database, table).getBytes(StandardCharsets.UTF_8));
                                 } catch (Exception e) {
