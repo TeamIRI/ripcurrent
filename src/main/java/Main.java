@@ -41,6 +41,8 @@ public class Main {
     final static String RULES_LIBRARY_PROPERTY_NAME = "rulesLibraryPath";
     final static String STRUCTURE_CHANGE_LOG_PROPERTY_NAME = "schemaChangeEventLog";
     final static String TARGET_NAME_POSTFIX_PROPERTY_NAME = "targetNamePostfix";
+
+    final static String DELTA_REPORT_ENABLED = "deltaReportEnabled";
     private static final Logger LOG = LoggerFactory.getLogger(Main.class);
 
     static AtomicReference<ConcurrentHashMap<String, SclScript>> scripts = new AtomicReference<>(); // Holds references to current SortCL jobs.
@@ -51,6 +53,11 @@ public class Main {
     String dataTargetProcessType; // Process type for the data target.
     String dataTargetSchema; // Schema for the data target (if using ODBC).
     String dataTargetSeparator; // Separator to place in the SortCL script for the data target.
+
+    String operation; // Change event operation (Insert/Update/Delete)
+
+    Boolean isDeltaReportEnabled = false;
+
     JsonArray fieldsArray;
     FileOutputStream fileOutputStream;
     AtomicReference<Integer> i = new AtomicReference<>(); // A key to identify a specific SortCL job in the map of jobs.
@@ -122,6 +129,13 @@ public class Main {
         } else {
             m.setDataTargetSeparator("\\t");
         }
+
+        String deltaReportEnabled;
+        deltaReportEnabled = props.getProperty(DELTA_REPORT_ENABLED);
+        if (deltaReportEnabled != null && deltaReportEnabled.equals("true")) {
+            m.setDeltaReportEnabled(true);
+        }
+
         String dataTargetSchema = props.getProperty(DATA_TARGET_SCHEMA_PROPERTY_NAME);
         if (dataTargetSchema != null && dataTargetSchema.length() > 0) {
             m.setDataTargetSchema(dataTargetSchema);
@@ -168,6 +182,7 @@ public class Main {
                             if (jsonObject != null && jsonObject.get("payload") != null && jsonObject.get("payload").getAsJsonObject() != null && jsonObject.get("payload").getAsJsonObject().get("op") != null) {
                                 operation = jsonObject.get("payload").getAsJsonObject().get("op").getAsString();
                             }
+                            m.setOperation(operation);
                             if (operation.equals("c") || operation.equals("u") && m.getDSN() != null || (operation.equals("d") && m.getDSN() != null)) { // Rows added or updated
                                 JsonObject Jobject_;
                                 if (operation.equals("d")) {
@@ -517,6 +532,16 @@ public class Main {
         if (script.getDSN() == null && script.getTarget() == null) {
             sb.append("/OUTFILE=stdout\n");
         }
+        if (m.getDeltaReportEnabled()){
+            sb.append("/OUTFILE=stdout\n");
+            int count2 = 0;
+            for (SclField field : script.getFields()) {
+                count2++;
+                sb.append("/FIELD=(").append(field.getName()).append(", TYPE=").append("ASCII").append(", POSITION=").append(count2).append(", SEPARATOR=\"\\t\"").append(")\n");
+                sb.append("/FIELD=(").append("TABLE").append(count2).append("=").append(script.getSourceTableIdentifier()).append(", TYPE=").append("ASCII").append(", POSITION=").append(count2).append(", SEPARATOR=\"\\t\"").append(")\n");
+                sb.append("/FIELD=(").append("FLAG").append(count2).append("=").append(m.getOperation()).append(", TYPE=").append("ASCII").append(", POSITION=").append(count2).append(", SEPARATOR=\"\\t\"").append(")\n");
+            }
+        }
         return sb.toString();
     }
 
@@ -677,6 +702,22 @@ public class Main {
 
     public void setStructureChangeEventLogPath(String structureChangeEventLogPath) {
         this.structureChangeEventLogPath = structureChangeEventLogPath;
+    }
+
+    public Boolean getDeltaReportEnabled() {
+        return isDeltaReportEnabled;
+    }
+
+    public void setDeltaReportEnabled(Boolean deltaReportEnabled) {
+        isDeltaReportEnabled = deltaReportEnabled;
+    }
+
+    public String getOperation() {
+        return operation;
+    }
+
+    public void setOperation(String operation) {
+        this.operation = operation;
     }
 
     public String getDSN() {
