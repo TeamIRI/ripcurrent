@@ -538,9 +538,9 @@ public class Main {
             for (SclField field : script.getFields()) {
                 count2++;
                 sb.append("/FIELD=(").append(field.getName()).append(", TYPE=").append("ASCII").append(", POSITION=").append(count2).append(", SEPARATOR=\"\\t\"").append(")\n");
-                sb.append("/FIELD=(").append("TABLE").append(count2).append("=").append(script.getSourceTableIdentifier()).append(", TYPE=").append("ASCII").append(", POSITION=").append(count2).append(", SEPARATOR=\"\\t\"").append(")\n");
-                sb.append("/FIELD=(").append("FLAG").append(count2).append("=").append(m.getOperation()).append(", TYPE=").append("ASCII").append(", POSITION=").append(count2).append(", SEPARATOR=\"\\t\"").append(")\n");
             }
+            sb.append("/FIELD=(").append("TABLE").append(++count2).append("=").append(script.getSourceTableIdentifier()).append(", TYPE=").append("ASCII").append(", POSITION=").append(count2).append(", SEPARATOR=\"\\t\"").append(")\n");
+            sb.append("/FIELD=(").append("FLAG").append(++count2).append("=").append(m.getOperation()).append(", TYPE=").append("ASCII").append(", POSITION=").append(count2).append(", SEPARATOR=\"\\t\"").append(")\n");
         }
         return sb.toString();
     }
