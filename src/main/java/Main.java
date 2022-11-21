@@ -42,6 +42,10 @@ public class Main {
     final static String STRUCTURE_CHANGE_LOG_PROPERTY_NAME = "schemaChangeEventLog";
     final static String TARGET_NAME_POSTFIX_PROPERTY_NAME = "targetNamePostfix";
 
+    final static String DELTA_REPORT_FILE_PROPERTY_NAME = "deltaReportFile";
+
+    final static String DELTA_REPORT_FILE_PROCESS_TYPE_PROPERTY_NAME = "deltaReportFileProcessType";
+
     final static String DELTA_REPORT_ENABLED = "deltaReportEnabled";
     private static final Logger LOG = LoggerFactory.getLogger(Main.class);
 
@@ -67,6 +71,10 @@ public class Main {
     RulesLibrary rulesLibrary; // Ripcurrent will attempt to parse an existing IRI rules library when its path is specified as a Java property to the application.
     String structureChangeEventLogPath;
     String DSN;
+
+    String deltaReportFileName;
+
+    String deltaReportFileProcessType;
 
     private static void loadLog4jConfiguration() throws IOException {
         Properties properties = new Properties();
@@ -136,6 +144,18 @@ public class Main {
             m.setDeltaReportEnabled(true);
         }
 
+        String deltaReportFile;
+        deltaReportFile = props.getProperty(DELTA_REPORT_FILE_PROPERTY_NAME);
+        if (deltaReportFile != null) {
+            m.setDeltaReportFileName(deltaReportFile);
+        }
+
+        String deltaReportFileProcessType;
+        deltaReportFileProcessType = props.getProperty(DELTA_REPORT_FILE_PROCESS_TYPE_PROPERTY_NAME);
+        if (deltaReportFileProcessType != null) {
+            m.setDeltaReportFileProcessType(deltaReportFileProcessType);
+        }
+
         String dataTargetSchema = props.getProperty(DATA_TARGET_SCHEMA_PROPERTY_NAME);
         if (dataTargetSchema != null && dataTargetSchema.length() > 0) {
             m.setDataTargetSchema(dataTargetSchema);
@@ -198,7 +218,8 @@ public class Main {
                                 if (record.key() != null) {
                                     try {
                                         keyField = JsonParser.parseString(record.key()).getAsJsonObject().get("Schema").getAsJsonObject().get("fields").getAsJsonArray().get(0).getAsJsonObject().get("field").getAsString();
-                                    } catch (JsonParseException | IllegalStateException | NullPointerException | IndexOutOfBoundsException e) {
+                                    } catch (JsonParseException | IllegalStateException | NullPointerException |
+                                             IndexOutOfBoundsException e) {
                                         LOG.debug("Cannot parse primary key.");
                                     }
                                 }
@@ -297,7 +318,8 @@ public class Main {
                                 try {
                                     scripts.get().get(scriptsKey).getStdin().newLine();
                                     scripts.get().get(scriptsKey).getStdin().flush();
-                                } catch (IOException e) { // Pipe is closed. This could happen if there was an error outputting to the target table.
+                                } catch (
+                                        IOException e) { // Pipe is closed. This could happen if there was an error outputting to the target table.
                                     LOG.error("Could not flush output of replication job associated with table '{}'. Aborting...", scripts.get().get(scriptsKey).getSourceTableIdentifier());
                                     terminateSortCLScript(scriptsKey, m);
                                 }
@@ -532,8 +554,11 @@ public class Main {
         if (script.getDSN() == null && script.getTarget() == null) {
             sb.append("/OUTFILE=stdout\n");
         }
-        if (m.getDeltaReportEnabled()){
-            sb.append("/OUTFILE=stdout\n");
+        if (m.getDeltaReportEnabled()) {
+            sb.append("/OUTFILE=").append(m.getDeltaReportFileName()!= null ? m.getDeltaReportFileName() : "stdout").append("\n");
+            if (m.getDeltaReportFileProcessType() != null){
+                sb.append("/PROCESS=").append(m.getDeltaReportFileProcessType()).append("\n");
+            }
             int count2 = 0;
             for (SclField field : script.getFields()) {
                 count2++;
@@ -726,5 +751,21 @@ public class Main {
 
     public void setDSN(String DSN) {
         this.DSN = DSN;
+    }
+
+    public String getDeltaReportFileName() {
+        return deltaReportFileName;
+    }
+
+    public void setDeltaReportFileName(String deltaReportFileName) {
+        this.deltaReportFileName = deltaReportFileName;
+    }
+
+    public String getDeltaReportFileProcessType() {
+        return deltaReportFileProcessType;
+    }
+
+    public void setDeltaReportFileProcessType(String deltaReportFileProcessType) {
+        this.deltaReportFileProcessType = deltaReportFileProcessType;
     }
 }
