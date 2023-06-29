@@ -47,7 +47,7 @@ public class Main {
 
     JsonObject afterJsonPayload;
     ArrayList<String> columns = new ArrayList<>(); // A list of column names for the specific source table.
-    DataClassLibrary dataClassLibrary; // Ripcurrent will attempt to parse an existing IRI data class library when its path is specified as a Java property to the application.
+    DataClassRuleLibrary dataClassLibrary; // Ripcurrent will attempt to parse an existing IRI data class library when its path is specified as a Java property to the application.
     String dataTargetProcessType; // Process type for the data target.
     String dataTargetSchema; // Schema for the data target (if using ODBC).
     String dataTargetSeparator; // Separator to place in the SortCL script for the data target.
@@ -142,10 +142,8 @@ public class Main {
         // Set a few default properties - SortCL is expecting string representations of values.
         props.setProperty("decimal.handling.mode", "string");
         props.setProperty("binary.handling.mode", "base64");
-        RulesLibrary rulesLibrary = new RulesLibrary(props.getProperty(RULES_LIBRARY_PROPERTY_NAME));
-        DataClassLibrary dataClassLibrary = new DataClassLibrary(props.getProperty(DATA_CLASS_LIBRARY_PROPERTY_NAME), rulesLibrary.getRules());
+        DataClassRuleLibrary dataClassLibrary = new DataClassRuleLibrary(props.getProperty(DATA_CLASS_LIBRARY_PROPERTY_NAME));
         m.setDataClassLibrary(dataClassLibrary);
-        m.setRulesLibrary(rulesLibrary);
         m.setProps(props);
         m.getI().set(0);
         String dataTargetProcessTypePropertyValue = m.getProps().getProperty(DATA_TARGET_PROCESS_TYPE_PROPERTY_NAME);
@@ -348,7 +346,7 @@ public class Main {
     }
 
     // Applying rules to columns based on data classes.
-    public static void classify(Set<Map.Entry<String, JsonElement>> values, DataClassLibrary dataClassLibrary, ArrayList<SclField> fields) {
+    public static void classify(Set<Map.Entry<String, JsonElement>> values, DataClassRuleLibrary dataClassLibrary, ArrayList<SclField> fields) {
         int count = 0;
         for (Map.Entry<String, JsonElement> value : values) {
             for (Map.Entry<Map<String, Rule>, DataClassMatcher> entry : dataClassLibrary.dataMatcherMap.entrySet()) {
@@ -583,11 +581,11 @@ public class Main {
         this.columns = columns;
     }
 
-    public DataClassLibrary getDataClassLibrary() {
+    public DataClassRuleLibrary getDataClassLibrary() {
         return dataClassLibrary;
     }
 
-    public void setDataClassLibrary(DataClassLibrary dataClassLibrary) {
+    public void setDataClassLibrary(DataClassRuleLibrary dataClassLibrary) {
         this.dataClassLibrary = dataClassLibrary;
     }
 

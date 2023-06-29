@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="ASCII"?>
+<dcv2:Dcv2Library xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:dcv2="http://www.iri.com/model/dcv2" xmlns:rulesv2="http://rulesv2/1.0">
+  <dcv2s name="FIRST_NAME">
+    <matchers xsi:type="dcv2:PatternMatcher" name="First_Name_Name_Pattern_Matcher" type="PATTERN" usedFor="LOCATION" pattern="FIRST_NAME"/>
+    <matchers xsi:type="dcv2:SetFileMatcher" name="First Name Data Set Matcher" type="FILE" path="C:\IRI\cosort105\sets\names\names_first.set" matchWholeWords="true"/>
+  </dcv2s>
+  <dcv2s name="LAST_NAME">
+    <matchers xsi:type="dcv2:PatternMatcher" name="LAST_NAME" type="PATTERN" usedFor="LOCATION" pattern="LAST_NAME"/>
+    <matchers xsi:type="dcv2:SetFileMatcher" name="Last Name Set Matcher" type="FILE" path="C:\IRI\cosort105\sets\names\names_last.set" matchWholeWords="true"/>
+    <matchers xsi:type="dcv2:FuzzyMatcher" name="Last_name_fuzzy_data_matcher" type="FUZZY" url="C:\IRI\cosort105\sets\" maxLDist="1.0" algorithmType="levenshtein" methodType="score" minPercentageThreshold="2.85"/>
+  </dcv2s>
+  <dcv2s name="EMAIL">
+    <matchers xsi:type="dcv2:PatternMatcher" name="EMAIL_NAME_MATCHER" type="PATTERN" usedFor="LOCATION" pattern="EMAIL"/>
+    <matchers xsi:type="dcv2:PatternMatcher" name="EMAIL" description="Email" type="PATTERN" pattern="\b(?=.{1,64}@)[\p{L}0-9_-]+(\.[\p{L}0-9_-]+)*@[^-][\p{L}0-9-]+(\.[\p{L}0-9-]+)*(\.[\p{L}]{2,63})\b"/>
+  </dcv2s>
+  <dcv2s name="FIELD1">
+    <matchers xsi:type="dcv2:PatternMatcher" name="FIELD1_COL" type="PATTERN" usedFor="LOCATION" pattern="FIELD1"/>
+  </dcv2s>
+  <dcv2s name="bad">
+    <matchers xsi:type="dcv2:TensorflowMatcher" name="bad" type="TENSORFLOW" model="s" tokenizer="s"/>
+  </dcv2s>
+  <dcv2s name="NAME">
+    <matchers xsi:type="dcv2:PatternMatcher" name="NAME" description="NAME" type="PATTERN" pattern="NAME"/>
+  </dcv2s>
+  <dcv2s name="FIRST_NAME_CASE_INS">
+    <matchers xsi:type="dcv2:SetFileMatcher" name="First_name" type="FILE" path="C:\IRI\cosort105\sets\names\names_first.set" matchWholeWords="true" ignoreCase="true"/>
+  </dcv2s>
+  <rulesLibrary>
+    <rules xsi:type="rulesv2:DataRule" name="DataLengthRule" editor="com.iri.pelican.ui.lengthPreservedPseudoWizard">
+      <properties dataRulePropertyType="EXPRESSION" value="lpp_file(&quot;file:/C:/IRI/cosort105/sets/names/names_first.set&quot;)"/>
+    </rules>
+    <rules xsi:type="rulesv2:DataRule" name="DataIfRule" editor="com.iri.pelican.ui.ifWizard">
+      <properties dataRulePropertyType="IFTHENELSE" value="IF ispattern(${FIELDNAME}, &quot;.*d.*&quot;) THEN enc_aes256(${FIELDNAME}, &quot;abc&quot;) ELSE enc_aes256(${FIELDNAME}, &quot;def&quot;)"/>
+      <properties dataRulePropertyType="NAME" value="EXPRESSION_${FIELDNAME}"/>
+    </rules>
+    <rules xsi:type="rulesv2:DataRule" name="DataStringRule" editor="com.iri.pelican.ui.stringFunctionWizard">
+      <properties dataRulePropertyType="EXPRESSION" value="tolower(${FIELDNAME})"/>
+      <properties dataRulePropertyType="NAME" value="TO_LOWER_${FIELDNAME}"/>
+    </rules>
+    <rules xsi:type="rulesv2:DataRule" name="DataRedactionRule" editor="com.iri.pelican.ui.wizard12">
+      <properties dataRulePropertyType="EXPRESSION" value="replace_chars(${FIELDNAME},&quot;*&quot;)"/>
+      <properties dataRulePropertyType="NAME" value="MASK_${FIELDNAME}"/>
+    </rules>
+    <rules xsi:type="rulesv2:DataRule" name="DataLengthRuleww" editor="com.iri.pelican.ui.lengthPreservedPseudoWizard">
+      <properties dataRulePropertyType="EXPRESSION" value="lpp_file(&quot;file:/C:/IRI/cosort105/sets/names/names_first.set&quot;)"/>
+    </rules>
+    <rules xsi:type="rulesv2:DataRule" name="DataCreditRule" editor="com.iri.pelican.ui.ccGenWizard">
+      <properties dataRulePropertyType="EXPRESSION" value="ccn_gen()"/>
+      <properties dataRulePropertyType="NAME" value="CC_GEN_${FIELDNAME}"/>
+    </rules>
+    <rules xsi:type="rulesv2:DataRule" name="DataHashingRule" editor="com.iri.pelican.ui.hashFunctionWizard">
+      <properties dataRulePropertyType="EXPRESSION" value="hash_md5(${FIELDNAME})"/>
+      <properties dataRulePropertyType="NAME" value="HASH_${FIELDNAME}"/>
+    </rules>
+    <rules xsi:type="rulesv2:DataRule" name="DataHashingRulesha" editor="com.iri.pelican.ui.hashFunctionWizard">
+      <properties dataRulePropertyType="EXPRESSION" value="hash_sha2(${FIELDNAME})"/>
+      <properties dataRulePropertyType="NAME" value="HASH_${FIELDNAME}"/>
+    </rules>
+    <rules xsi:type="rulesv2:DataRule" name="DataDBRule" editor="com.iri.pelican.ui.pseudoWizardTable">
+      <properties dataRulePropertyType="NAME" value="LOOK_${FIELDNAME}"/>
+      <properties dataRulePropertyType="SET" value="SET=&quot;test.basic;DSN=localmysql;&quot; [${FIELDNAME}] LOOKUP=&quot;NAME,SID&quot;"/>
+    </rules>
+  </rulesLibrary>
+  <defaultDepthOfMatching noData="true" useThreshold="false"/>
+</dcv2:Dcv2Library>
+

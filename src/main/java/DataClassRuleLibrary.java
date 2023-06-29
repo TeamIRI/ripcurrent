@@ -22,18 +22,40 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
-public class DataClassLibrary {
-    private static final Logger LOG = LoggerFactory.getLogger(DataClassLibrary.class);
+public class DataClassRuleLibrary {
+    private static final Logger LOG = LoggerFactory.getLogger(DataClassRuleLibrary.class);
     Map<Map<String, Rule>, DataClassMatcher> dataMatcherMap = new HashMap<>();
 
-    DataClassLibrary(String filePath, Map<String, Rule> rules) {
+    Map<String, Rule> rules = new HashMap<>();
+
+    DataClassRuleLibrary(String filePath) {
         try {
             File dataClassLibraryFile = new File(filePath);
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
             Document doc = dBuilder.parse(dataClassLibraryFile);
             doc.getDocumentElement().normalize();
-            NodeList nList = doc.getElementsByTagName("dataClasses");
+            NodeList nList = doc.getElementsByTagName("dcv2s");
+            NodeList rulesList = doc.getElementsByTagName("rules");
+            for (int temp = 0; temp < rulesList.getLength(); temp++) {
+                Node nNode = rulesList.item(temp);
+                if (nNode.getNodeType() == Node.ELEMENT_NODE) {
+                    Element eElement = (Element) nNode;
+                    NodeList matchersList = eElement.getElementsByTagName("properties");
+                    for (int temp2 = 0; temp2 < matchersList.getLength(); temp2++) {
+                        Node nNode2 = matchersList.item(temp2);
+                        switch (nNode2.getAttributes().getNamedItem("fieldRulePropertyType").getNodeValue()) {
+                            case "EXPRESSION":
+                                rules.put(((Element) nNode).getAttribute("name"), new Rule("Expression", nNode2.getAttributes().getNamedItem("value").getNodeValue()));
+                                break;
+                            case "SET":
+                                rules.put(((Element) nNode).getAttribute("name"), new Rule("Set", nNode2.getAttributes().getNamedItem("value").getNodeValue().replace("&quot;", "").replace(" SELECT=ANY", "")));
+                                break;
+                            default:
+                        }
+                    }
+                }
+            }
             for (int temp = 0; temp < nList.getLength(); temp++) {
                 Node nNode = nList.item(temp);
                 if (nNode.getNodeType() == Node.ELEMENT_NODE) {
@@ -72,7 +94,7 @@ public class DataClassLibrary {
                 }
             }
         } catch (Exception e) {
-            LOG.warn("Could not parse data class library '{}'...", filePath, e);
+            LOG.warn("Could not parse data class rule library '{}'...", filePath, e);
         }
     }
 
