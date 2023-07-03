@@ -133,9 +133,6 @@ public class Main {
         } else {
             m.setPostfixTableName(targetNamePostfix);
         }
-        if (rulesLibraryPathString == null) {
-            LOG.warn("{} property not set. Please set this property to the absolute path of an IRI rules library to apply rules.", RULES_LIBRARY_PROPERTY_NAME);
-        }
         if (dataClassLibraryPathString == null) {
             LOG.warn("{} property not set. Please set this property to the absolute path of an IRI data class library to classify data.", DATA_CLASS_LIBRARY_PROPERTY_NAME);
         }

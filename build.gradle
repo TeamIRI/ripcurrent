@@ -23,7 +23,7 @@ def runtimeProperties = [
 ]
 jar {
     archiveBaseName = 'ripcurrent'
-    archiveVersion = '1.0.0'
+    archiveVersion = '2.0.0'
 }
 
 sourceCompatibility = 1.8

@@ -93,10 +93,10 @@ public class DataClassRuleLibrary {
                                 LOG.warn("Set file '{}' does not exist...", nNode2.getAttributes().getNamedItem("details").getNodeValue());
                             }
                         } else {
-                            if (nNode2.getAttributes().getNamedItem("pattern") != null && nNode2.getAttributes().getNamedItem("LOCATION") != null && nNode2.getAttributes().getNamedItem("usedFor").getNodeValue().equals("LOCATION")) {
+                            if (nNode2.getAttributes().getNamedItem("pattern") != null && nNode2.getAttributes().getNamedItem("usedFor") != null && nNode2.getAttributes().getNamedItem("usedFor").getNodeValue().equals("LOCATION")) {
                                 dataMatcherMap.put(ruleMap, new DataClassMatcher(new NameMatcher(nNode2.getAttributes().getNamedItem("pattern").getNodeValue()), new PatternMatcher("")));
                             }
-                            else if (nNode2.getAttributes().getNamedItem("pattern") != null && nNode2.getAttributes().getNamedItem("LOCATION") != null && !nNode2.getAttributes().getNamedItem("usedFor").getNodeValue().equals("LOCATION")) {
+                            else if (nNode2.getAttributes().getNamedItem("pattern") != null && (nNode2.getAttributes().getNamedItem("usedFor") == null || !nNode2.getAttributes().getNamedItem("usedFor").getNodeValue().equals("LOCATION"))) {
                                 dataMatcherMap.put(ruleMap, new DataClassMatcher(new NameMatcher(""), new PatternMatcher(nNode2.getAttributes().getNamedItem("pattern").getNodeValue())));
                             }
                         }
