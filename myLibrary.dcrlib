@@ -3,27 +3,55 @@
   <dcv2s name="FIRST_NAME">
     <matchers xsi:type="dcv2:PatternMatcher" name="First_Name_Name_Pattern_Matcher" type="PATTERN" usedFor="LOCATION" pattern="FIRST_NAME"/>
     <matchers xsi:type="dcv2:SetFileMatcher" name="First Name Data Set Matcher" type="FILE" path="C:\IRI\cosort105\sets\names\names_first.set" matchWholeWords="true"/>
+    <defaultRule xsi:type="rulesv2:DataRule" name="DataRedactionRule" editor="com.iri.pelican.ui.wizard12">
+      <properties dataRulePropertyType="EXPRESSION" value="replace_chars(${FIELDNAME},&quot;*&quot;)"/>
+      <properties dataRulePropertyType="NAME" value="MASK_${FIELDNAME}"/>
+    </defaultRule>
   </dcv2s>
   <dcv2s name="LAST_NAME">
     <matchers xsi:type="dcv2:PatternMatcher" name="LAST_NAME" type="PATTERN" usedFor="LOCATION" pattern="LAST_NAME"/>
     <matchers xsi:type="dcv2:SetFileMatcher" name="Last Name Set Matcher" type="FILE" path="C:\IRI\cosort105\sets\names\names_last.set" matchWholeWords="true"/>
     <matchers xsi:type="dcv2:FuzzyMatcher" name="Last_name_fuzzy_data_matcher" type="FUZZY" url="C:\IRI\cosort105\sets\" maxLDist="1.0" algorithmType="levenshtein" methodType="score" minPercentageThreshold="2.85"/>
+    <defaultRule xsi:type="rulesv2:DataRule" name="DataRedactionRule" editor="com.iri.pelican.ui.wizard12">
+      <properties dataRulePropertyType="EXPRESSION" value="replace_chars(${FIELDNAME},&quot;*&quot;)"/>
+      <properties dataRulePropertyType="NAME" value="MASK_${FIELDNAME}"/>
+    </defaultRule>
   </dcv2s>
   <dcv2s name="EMAIL">
     <matchers xsi:type="dcv2:PatternMatcher" name="EMAIL_NAME_MATCHER" type="PATTERN" usedFor="LOCATION" pattern="EMAIL"/>
     <matchers xsi:type="dcv2:PatternMatcher" name="EMAIL" description="Email" type="PATTERN" pattern="\b(?=.{1,64}@)[\p{L}0-9_-]+(\.[\p{L}0-9_-]+)*@[^-][\p{L}0-9-]+(\.[\p{L}0-9-]+)*(\.[\p{L}]{2,63})\b"/>
+    <defaultRule xsi:type="rulesv2:DataRule" name="DataRedactionRule" editor="com.iri.pelican.ui.wizard12">
+      <properties dataRulePropertyType="EXPRESSION" value="replace_chars(${FIELDNAME},&quot;*&quot;)"/>
+      <properties dataRulePropertyType="NAME" value="MASK_${FIELDNAME}"/>
+    </defaultRule>
   </dcv2s>
   <dcv2s name="FIELD1">
     <matchers xsi:type="dcv2:PatternMatcher" name="FIELD1_COL" type="PATTERN" usedFor="LOCATION" pattern="FIELD1"/>
+    <defaultRule xsi:type="rulesv2:DataRule" name="DataRedactionRule" editor="com.iri.pelican.ui.wizard12">
+      <properties dataRulePropertyType="EXPRESSION" value="replace_chars(${FIELDNAME},&quot;*&quot;)"/>
+      <properties dataRulePropertyType="NAME" value="MASK_${FIELDNAME}"/>
+    </defaultRule>
   </dcv2s>
   <dcv2s name="bad">
     <matchers xsi:type="dcv2:TensorflowMatcher" name="bad" type="TENSORFLOW" model="s" tokenizer="s"/>
+    <defaultRule xsi:type="rulesv2:DataRule" name="DataRedactionRule" editor="com.iri.pelican.ui.wizard12">
+      <properties dataRulePropertyType="EXPRESSION" value="replace_chars(${FIELDNAME},&quot;*&quot;)"/>
+      <properties dataRulePropertyType="NAME" value="MASK_${FIELDNAME}"/>
+    </defaultRule>
   </dcv2s>
   <dcv2s name="NAME">
     <matchers xsi:type="dcv2:PatternMatcher" name="NAME" description="NAME" type="PATTERN" pattern="NAME"/>
+    <defaultRule xsi:type="rulesv2:DataRule" name="DataRedactionRule" editor="com.iri.pelican.ui.wizard12">
+      <properties dataRulePropertyType="EXPRESSION" value="replace_chars(${FIELDNAME},&quot;*&quot;)"/>
+      <properties dataRulePropertyType="NAME" value="MASK_${FIELDNAME}"/>
+    </defaultRule>
   </dcv2s>
   <dcv2s name="FIRST_NAME_CASE_INS">
     <matchers xsi:type="dcv2:SetFileMatcher" name="First_name" type="FILE" path="C:\IRI\cosort105\sets\names\names_first.set" matchWholeWords="true" ignoreCase="true"/>
+    <defaultRule xsi:type="rulesv2:DataRule" name="DataRedactionRule" editor="com.iri.pelican.ui.wizard12">
+      <properties dataRulePropertyType="EXPRESSION" value="replace_chars(${FIELDNAME},&quot;*&quot;)"/>
+      <properties dataRulePropertyType="NAME" value="MASK_${FIELDNAME}"/>
+    </defaultRule>
   </dcv2s>
   <rulesLibrary>
     <rules xsi:type="rulesv2:DataRule" name="DataLengthRule" editor="com.iri.pelican.ui.lengthPreservedPseudoWizard">
@@ -63,4 +91,3 @@
   </rulesLibrary>
   <defaultDepthOfMatching noData="true" useThreshold="false"/>
 </dcv2:Dcv2Library>
-

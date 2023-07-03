@@ -220,11 +220,17 @@ public class Main {
                                 // Dates are coming in through the Debezium connector as numeric values, this is looking for them and converting them to their date representation.
                                 for (Map.Entry<String, JsonElement> jj : Jobject_.entrySet()) {
                                     if (dateIndices.contains(loopTrack)) {
-                                        jj.setValue(new JsonPrimitive(DateTimeConversionUtil.integerToDate(jj.getValue().getAsInt())));
+                                        if (!jj.getValue().isJsonNull()) {
+                                            jj.setValue(new JsonPrimitive(DateTimeConversionUtil.integerToDate(jj.getValue().getAsInt())));
+                                        }
                                     } else if (dateTimeIndices.contains(loopTrack)) {
-                                        jj.setValue(new JsonPrimitive(DateTimeConversionUtil.numberToDateTime(jj.getValue().getAsLong())));
+                                        if (!jj.getValue().isJsonNull()) {
+                                            jj.setValue(new JsonPrimitive(DateTimeConversionUtil.numberToDateTime(jj.getValue().getAsLong())));
+                                        }
                                     } else if (timeIndices.contains(loopTrack)) {
-                                        jj.setValue(new JsonPrimitive(DateTimeConversionUtil.numberToTime(jj.getValue().getAsLong())));
+                                        if (!jj.getValue().isJsonNull()) {
+                                            jj.setValue(new JsonPrimitive(DateTimeConversionUtil.numberToTime(jj.getValue().getAsLong())));
+                                        }
                                     }
                                     loopTrack++;
                                 }
@@ -309,6 +315,7 @@ public class Main {
                         } catch (NullPointerException npe) {
                             terminateSortCLScript(scriptsKey, m);
                         } catch (Exception unexpectedException) {
+                            unexpectedException.printStackTrace();
                             LOG.error("Unexpected exception encountered: '{}'. Terminating...", unexpectedException.getMessage());
                             terminateSortCLScript(scriptsKey, m);
                         }
@@ -350,12 +357,14 @@ public class Main {
         int count = 0;
         for (Map.Entry<String, JsonElement> value : values) {
             for (Map.Entry<Map<String, Rule>, DataClassMatcher> entry : dataClassLibrary.dataMatcherMap.entrySet()) {
-                if (entry.getValue().getDataMatcher().isMatch(value.getValue().getAsString()) || entry.getValue().getNameMatcher().isMatch(fields.get(count).name)) {
-                    fields.get(count).expressionApplied = true;
-                    Rule rule = (Rule) entry.getKey().values().toArray()[0];
-                    fields.get(count).expression = rule.getRule();
-                    fields.get(count).ruleType = rule.getType();
-                    break;
+                if (!value.getValue().isJsonNull()) {
+                    if (entry.getValue().getDataMatcher().isMatch(value.getValue().getAsString()) || entry.getValue().getNameMatcher().isMatch(fields.get(count).name)) {
+                        fields.get(count).expressionApplied = true;
+                        Rule rule = (Rule) entry.getKey().values().toArray()[0];
+                        fields.get(count).expression = rule.getRule();
+                        fields.get(count).ruleType = rule.getType();
+                        break;
+                    }
                 }
             }
             count++;

@@ -7,6 +7,7 @@
  *     devonk
  */
 
+import com.sun.org.apache.xerces.internal.dom.DeferredElementImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -44,7 +45,7 @@ public class DataClassRuleLibrary {
                     NodeList matchersList = eElement.getElementsByTagName("properties");
                     for (int temp2 = 0; temp2 < matchersList.getLength(); temp2++) {
                         Node nNode2 = matchersList.item(temp2);
-                        switch (nNode2.getAttributes().getNamedItem("fieldRulePropertyType").getNodeValue()) {
+                        switch (nNode2.getAttributes().getNamedItem("dataRulePropertyType").getNodeValue()) {
                             case "EXPRESSION":
                                 rules.put(((Element) nNode).getAttribute("name"), new Rule("Expression", nNode2.getAttributes().getNamedItem("value").getNodeValue()));
                                 break;
@@ -60,35 +61,44 @@ public class DataClassRuleLibrary {
                 Node nNode = nList.item(temp);
                 if (nNode.getNodeType() == Node.ELEMENT_NODE) {
                     Element eElement = (Element) nNode;
-                    String[] defaultRule;
-                    String ruleExpression;
+                    String defaultRule = "";
+                    String ruleExpression = "";
                     try {
-                        defaultRule = eElement.getChildNodes().item(0).getNextSibling().getAttributes().getNamedItem("href").getNodeValue().split("#");
-                        if (rules.get(defaultRule[1]) != null) {
-                            ruleExpression = rules.get(defaultRule[1]).getRule();
-                        } else { // Default
-                            continue;
+                        int length = ((DeferredElementImpl) eElement.getChildNodes()).getLength();
+                        for (int aa = 0; aa < length; aa++) {
+                            String nodeName = ((DeferredElementImpl) eElement.getChildNodes()).item(aa).getNodeName();
+                            if (!nodeName.equals("defaultRule")) {
+                                continue;
+                            }
+                            defaultRule = eElement.getChildNodes().item(aa).getAttributes().getNamedItem("name").getNodeValue();
+                            if (rules.get(defaultRule) != null) {
+                                ruleExpression = rules.get(defaultRule).getRule();
+                            } else { // Default
+                                continue;
+                            }
                         }
                     } catch (NullPointerException e) {
                         continue;
                     }
-                    String nameMatcher = eElement.getAttributes().getNamedItem("nameMatcher").getNodeValue();
-                    if (nameMatcher == null) {
-                        nameMatcher = "";
-                    }
+
                     NodeList matchersList = eElement.getElementsByTagName("matchers");
                     for (int temp2 = 0; temp2 < matchersList.getLength(); temp2++) {
                         Node nNode2 = matchersList.item(temp2);
                         HashMap<String, Rule> ruleMap = new HashMap<>();
-                        ruleMap.put(((Element) nNode).getAttribute("name"), new Rule(rules.get(defaultRule[1]).getType(), ruleExpression));
+                        ruleMap.put(((Element) nNode).getAttribute("name"), new Rule(rules.get(defaultRule).getType(), ruleExpression));
                         if (nNode2.getAttributes().getNamedItem("type") != null && nNode2.getAttributes().getNamedItem("type").getNodeValue().equals("FILE")) {
                             try {
-                                dataMatcherMap.put(ruleMap, new DataClassMatcher(new NameMatcher(nameMatcher), new SetMatcher(nNode2.getAttributes().getNamedItem("details").getNodeValue())));
+                                dataMatcherMap.put(ruleMap, new DataClassMatcher(new NameMatcher(""), new SetMatcher(nNode2.getAttributes().getNamedItem("path").getNodeValue())));
                             } catch (IOException | URISyntaxException e) {
                                 LOG.warn("Set file '{}' does not exist...", nNode2.getAttributes().getNamedItem("details").getNodeValue());
                             }
                         } else {
-                            dataMatcherMap.put(ruleMap, new DataClassMatcher(new NameMatcher(nameMatcher), new PatternMatcher(nNode2.getAttributes().getNamedItem("details").getNodeValue())));
+                            if (nNode2.getAttributes().getNamedItem("pattern") != null && nNode2.getAttributes().getNamedItem("LOCATION") != null && nNode2.getAttributes().getNamedItem("usedFor").getNodeValue().equals("LOCATION")) {
+                                dataMatcherMap.put(ruleMap, new DataClassMatcher(new NameMatcher(nNode2.getAttributes().getNamedItem("pattern").getNodeValue()), new PatternMatcher("")));
+                            }
+                            else if (nNode2.getAttributes().getNamedItem("pattern") != null && nNode2.getAttributes().getNamedItem("LOCATION") != null && !nNode2.getAttributes().getNamedItem("usedFor").getNodeValue().equals("LOCATION")) {
+                                dataMatcherMap.put(ruleMap, new DataClassMatcher(new NameMatcher(""), new PatternMatcher(nNode2.getAttributes().getNamedItem("pattern").getNodeValue())));
+                            }
                         }
                     }
                 }
