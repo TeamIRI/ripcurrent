@@ -7,7 +7,7 @@
  *     devonk
  */
 
-import com.sun.org.apache.xerces.internal.dom.DeferredElementImpl;
+import org.apache.xerces.dom.DeferredElementImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
