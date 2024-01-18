@@ -450,6 +450,7 @@ public class Main {
     // Generating a SortCL script dynamically based on info from Debezium change events and any default rules associated with a data class.
     public static String sortCLScript(SclScript script, Main m, String keyField) {
         StringBuilder sb = new StringBuilder();
+        sb.append("/MONITOR=0\n");
         sb.append("/INFILE=stdin\n/PROCESS=CONCH\n");
         int count = 0;
         for (SclField field : script.getFields()) {
